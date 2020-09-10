@@ -5,13 +5,13 @@
 #include "window.h"
 
 void
-delete_from_workspace(struct client *client)
+delete_from_workspace(struct sane_window *window)
 {
-	if (client->ws < 0)
+	if (window->ws < 0)
 		return;
-	delete_item(&workspace_list[client->ws], client->workspace_item);
-	client->workspace_item = NULL;
-	client->ws = -1;
+	delete_item(&workspace_list[window->ws], window->workspace_item);
+	window->workspace_item = NULL;
+	window->ws = -1;
 }
 
 void
@@ -34,26 +34,26 @@ previous_workspace()
 		: change_workspace_helper(WORKSPACES - 1);
 }
 
-/* Add a window, specified by client, to workspace ws. */
+/* Add a window, specified by window, to workspace ws. */
 void
-add_to_workspace(struct client *client, uint32_t ws)
+add_to_workspace(struct sane_window *window, uint32_t ws)
 {
-	struct item *item = add_item(&workspace_list[ws]);
+	struct list_item *item = add_item(&workspace_list[ws]);
 
-	if (client == NULL)
+	if (window == NULL)
 		return;
 
 	if (NULL == item)
 		return;
 
 	/* Remember our place in the workspace window list. */
-	client->workspace_item = item;
-	client->ws = ws;
-	item->data         = client;
+	window->workspace_item	= item;
+	window->ws		= ws;
+	item->data		= window;
 
 	/* Set window hint property so we can survive a crash. Like "fixed" */
-	if (!client->fixed)
-		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+	if (!window->fixed)
+		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id,
 				    ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL,
 				    32, 1, &ws);
 }
@@ -63,8 +63,8 @@ void
 change_workspace_helper(const uint32_t ws)
 {
 	xcb_query_pointer_reply_t *pointer;
-	struct client *client;
-	struct item *item;
+	struct sane_window *window;
+	struct list_item *item;
 	if (ws == current_workspace)
 		return;
 	xcb_ewmh_set_current_desktop(ewmh, 0, ws);
@@ -72,29 +72,29 @@ change_workspace_helper(const uint32_t ws)
 	/* Go through list of current ws.
 	 * Unmap everything that isn't fixed. */
 	for (item = workspace_list[current_workspace]; item != NULL;) {
-		client = item->data;
+		window = item->data;
 		item = item->next;
-		set_borders(client, false);
-		if (!client->fixed){
-			xcb_unmap_window(conn, client->id);
+		set_borders(window, false);
+		if (!window->fixed){
+			xcb_unmap_window(conn, window->id);
 		} else {
 			// correct order is delete first add later.
-			delete_from_workspace(client);
-			add_to_workspace(client, ws);
+			delete_from_workspace(window);
+			add_to_workspace(window, ws);
 		}
 	}
 	for (item = workspace_list[ws]; item != NULL; item = item->next) {
-		client = item->data;
-		if (!client->fixed && !client->iconic)
-			xcb_map_window(conn, client->id);
+		window = item->data;
+		if (!window->fixed && !window->iconic)
+			xcb_map_window(conn, window->id);
 	}
 	current_workspace = ws;
 	pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn,
 								  screen->root), 0);
 	if (pointer == NULL)
-		set_focus(NULL);
+		focus_window(NULL);
 	else {
-		set_focus(find_client(&pointer->child));
+		focus_window(find_window(&pointer->child));
 		free(pointer);
 	}
 }
@@ -103,14 +103,14 @@ change_workspace_helper(const uint32_t ws)
 void
 send_to_workspace(const Arg *arg)
 {
-	if (NULL == focus_window ||
-	    focus_window->fixed ||
+	if (NULL == current_window ||
+	    current_window->fixed ||
 	    arg->i == current_workspace)
 		return;
 	// correct order is delete first add later.
-	delete_from_workspace(focus_window);
-	add_to_workspace(focus_window, arg->i);
-	xcb_unmap_window(conn, focus_window->id);
+	delete_from_workspace(current_window);
+	add_to_workspace(current_window, arg->i);
+	xcb_unmap_window(conn, current_window->id);
 	xcb_flush(conn);
 }
 

@@ -62,59 +62,59 @@ get_pointer(const xcb_drawable_t *win, int16_t *x, int16_t *y)
 
 
 void
-mouse_resize(struct client *client, const int16_t rel_x, const int16_t rel_y)
+mouse_resize(struct sane_window *window, const int16_t rel_x, const int16_t rel_y)
 {
-	if (focus_window->id == screen->root ||
-	    focus_window->maxed)
+	if (current_window->id == screen->root ||
+	    current_window->maxed)
 		return;
 
-	client->width  = abs(rel_x);
-	client->height = abs(rel_y);
+	window->width  = abs(rel_x);
+	window->height = abs(rel_y);
 
 	if (resize_by_line) {
-		client->width -= (client->width - client->base_width)
-			% client->width_increment;
-		client->height -= (client->height - client->base_height)
-			% client->height_increment;
+		window->width -= (window->width - window->base_width)
+			% window->width_increment;
+		window->height -= (window->height - window->base_height)
+			% window->height_increment;
 	}
 
-	resize_limit(client);
-	client->vertical_maxed = false;
-	client->horizontal_maxed  = false;
+	resize_limit(window);
+	window->vertical_maxed = false;
+	window->horizontal_maxed  = false;
 }
 
 /* Move window win as a result of pointer motion to coordinates rel_x,rel_y. */
 void
 mouse_move(const int16_t rel_x, const int16_t rel_y)
 {
-	if (focus_window == NULL ||
-	    focus_window->ws != current_workspace)
+	if (current_window == NULL ||
+	    current_window->ws != current_workspace)
 		return;
 
-	focus_window->x = rel_x;
-	focus_window->y = rel_y;
+	current_window->x = rel_x;
+	current_window->y = rel_y;
 
 	if (borders[2] > 0)
-		snap_window(focus_window);
+		snap_window(current_window);
 
-	move_limit(focus_window);
+	move_limit(current_window);
 }
 
 
 void
 move_pointer_back(const int16_t start_x, const int16_t start_y,
-		  const struct client *client)
+		  const struct sane_window *window)
 {
 	if (start_x > (0 - conf.border_width - 1) &&
-	    start_x < (client->width + conf.border_width + 1) &&
+	    start_x < (window->width + conf.border_width + 1) &&
 	    start_y > (0 - conf.border_width - 1) &&
-	    start_y < (client->height + conf.border_width + 1))
-		xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0, start_x, start_y);
+	    start_y < (window->height + conf.border_width + 1))
+		xcb_warp_pointer(conn, XCB_NONE, window->id, 0, 0, 0, 0, start_x, start_y);
 }
 
 
 void
-center_pointer(xcb_drawable_t win, struct client *cl)
+center_pointer(xcb_drawable_t win, struct sane_window *window)
 {
 	int16_t cur_x, cur_y;
 
@@ -122,25 +122,25 @@ center_pointer(xcb_drawable_t win, struct client *cl)
 
 	switch (CURSOR_POSITION) {
 	case BOTTOM_RIGHT:
-		cur_x += cl->width;
+		cur_x += window->width;
 	case BOTTOM_LEFT:
-		cur_y += cl->height; break;
+		cur_y += window->height; break;
 	case TOP_RIGHT:
-		cur_x += cl->width;
+		cur_x += window->width;
 	case TOP_LEFT:
 		break;
 	default:
-		cur_x = cl->width / 2;
-		cur_y = cl->height / 2;
+		cur_x = window->width / 2;
+		cur_y = window->height / 2;
 	}
 
 	xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0, cur_x, cur_y);
 }
 
 
-/* set the given client to listen to button events (presses / releases) */
+/* set the given window to listen to button events (presses / releases) */
 void
-grab_buttons(struct client *c)
+grab_buttons(struct sane_window *c)
 {
 	unsigned int modifiers[] = {
 		0,

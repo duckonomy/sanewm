@@ -27,19 +27,19 @@ xcb_screen_of_display(xcb_connection_t *con, int screen)
 void
 get_monitor_size(int8_t with_offsets, int16_t *monitor_x, int16_t *monitor_y,
 		 uint16_t *monitor_width, uint16_t *monitor_height,
-		 const struct client *client)
+		 const struct sane_window *window)
 {
-	if (NULL == client || NULL == client->monitor) {
+	if (NULL == window || NULL == window->monitor) {
 		/* Window isn't attached to any monitor, so we use
 		 * the root window size. */
 		*monitor_x      = *monitor_y = 0;
 		*monitor_width  = screen->width_in_pixels;
 		*monitor_height = screen->height_in_pixels;
 	} else {
-		*monitor_x      = client->monitor->x;
-		*monitor_y      = client->monitor->y;
-		*monitor_width  = client->monitor->width;
-		*monitor_height = client->monitor->height;
+		*monitor_x      = window->monitor->x;
+		*monitor_y      = window->monitor->y;
+		*monitor_width  = window->monitor->width;
+		*monitor_height = window->monitor->height;
 	}
 
 	if (with_offsets) {
@@ -63,7 +63,7 @@ setup_randr(void)
 	if (!extension->present)
 		return -1;
 	else
-		getrandr();
+		get_randr();
 
 	base = extension->first_event;
 	xcb_randr_select_input(conn, screen->root,
@@ -77,7 +77,7 @@ setup_randr(void)
 
 /* Get RANDR resources and figure out how many outputs there are. */
 void
-getrandr(void)
+get_randr(void)
 {
 	int len;
 	xcb_randr_get_screen_resources_current_cookie_t rcookie
@@ -90,9 +90,9 @@ getrandr(void)
 		return;
 
 	xcb_timestamp_t timestamp = res->config_timestamp;
-	len= xcb_randr_get_screen_resources_current_outputs_length(res);
-	xcb_randr_output_t *outputs
-		= xcb_randr_get_screen_resources_current_outputs(res);
+	len = xcb_randr_get_screen_resources_current_outputs_length(res);
+	xcb_randr_output_t *outputs =
+		xcb_randr_get_screen_resources_current_outputs(res);
 
 	/* Request information for all outputs. */
 	get_outputs(outputs, len, timestamp);
@@ -112,8 +112,8 @@ get_outputs(xcb_randr_output_t *outputs, const int len,
 	xcb_randr_get_crtc_info_cookie_t icookie;
 	xcb_randr_get_crtc_info_reply_t *crtc = NULL;
 	xcb_randr_get_output_info_reply_t *output;
-	struct monitor *mon, *clone_monitor;
-	struct item *item;
+	struct monitor *original_monitor, *clone_monitor;
+	struct list_item *item;
 	xcb_randr_get_output_info_cookie_t ocookie[len];
 
 	for (i = 0; i < len; ++i)
@@ -148,53 +148,53 @@ get_outputs(xcb_randr_output_t *outputs, const int len,
 				continue;
 
 			/* Do we know this monitor already? */
-			if (NULL == (mon = find_monitor(outputs[i])))
+			if (NULL == (original_monitor = find_monitor(outputs[i])))
 				add_monitor(outputs[i], crtc->x, crtc->y,
 					    crtc->width,crtc->height);
 			else
 				/* We know this monitor. Update information.
 				 * If it's smaller than before, rearrange windows. */
-				if (crtc->x != mon->x ||
-				    crtc->y != mon->y ||
-				    crtc->width != mon->width ||
-				    crtc->height != mon->height) {
-					if (crtc->x != mon->x)
-						mon->x = crtc->x;
-					if (crtc->y != mon->y)
-						mon->y = crtc->y;
-					if (crtc->width != mon->width)
-						mon->width = crtc->width;
-					if (crtc->height != mon->height)
-						mon->height = crtc->height;
+				if (crtc->x != original_monitor->x ||
+				    crtc->y != original_monitor->y ||
+				    crtc->width != original_monitor->width ||
+				    crtc->height != original_monitor->height) {
+					if (crtc->x != original_monitor->x)
+						original_monitor->x = crtc->x;
+					if (crtc->y != original_monitor->y)
+						original_monitor->y = crtc->y;
+					if (crtc->width != original_monitor->width)
+						original_monitor->width = crtc->width;
+					if (crtc->height != original_monitor->height)
+						original_monitor->height = crtc->height;
 
 					// TODO when lid closed, one screen
-					arrange_by_monitor(mon);
+					arrange_by_monitor(original_monitor);
 				}
 			free(crtc);
 		} else {
 			/* Check if it was used before. If it was, do something. */
-			if ((mon = find_monitor(outputs[i]))) {
-				struct client *client;
+			if ((original_monitor = find_monitor(outputs[i]))) {
+				struct sane_window *window;
 				for (item = window_list; item != NULL; item = item->next) {
 					/* Check all windows on this monitor
 					 * and move them to the next or to the
 					 * first monitor if there is no next. */
-					client = item->data;
+					window = item->data;
 
-					if (client->monitor == mon) {
-						if (NULL == client->monitor->item->next)
+					if (window->monitor == original_monitor) {
+						if (NULL == window->monitor->item->next)
 							if (NULL == monitor_list)
-								client->monitor = NULL;
+								window->monitor = NULL;
 							else
-								client->monitor = monitor_list->data;
+								window->monitor = monitor_list->data;
 						else
-							client->monitor = client->monitor->item->next->data;
-						fit_on_screen(client);
+							window->monitor = window->monitor->item->next->data;
+						fit_on_screen(window);
 					}
 				}
 
 				/* It's not active anymore. Forget about it. */
-				delete_monitor(mon);
+				delete_monitor(original_monitor);
 			}
 		}
 		if (NULL != output)
@@ -207,14 +207,14 @@ get_outputs(xcb_randr_output_t *outputs, const int len,
 void
 arrange_by_monitor(struct monitor *monitor)
 {
-	struct client *client;
-	struct item *item;
+	struct sane_window *window;
+	struct list_item *item;
 
 	for (item = window_list; item != NULL; item = item->next) {
-		client = item->data;
+		window = item->data;
 
-		if (client->monitor == monitor)
-			fit_on_screen(client);
+		if (window->monitor == monitor)
+			fit_on_screen(window);
 	}
 }
 
@@ -222,7 +222,7 @@ struct monitor *
 find_monitor(xcb_randr_output_t id)
 {
 	struct monitor *mon;
-	struct item *item;
+	struct list_item *item;
 
 	for (item = monitor_list; item != NULL; item = item->next) {
 		mon = item->data;
@@ -238,7 +238,7 @@ struct monitor *
 find_clones(xcb_randr_output_t id, const int16_t x, const int16_t y)
 {
 	struct monitor *clone_monitor;
-	struct item *item;
+	struct list_item *item;
 
 	for (item = monitor_list; item != NULL; item = item->next) {
 		clone_monitor = item->data;
@@ -255,7 +255,7 @@ struct monitor *
 find_monitor_by_coordinate(const int16_t x, const int16_t y)
 {
 	struct monitor *mon;
-	struct item *item;
+	struct list_item *item;
 
 	for (item = monitor_list; item != NULL; item = item->next) {
 		mon = item->data;
@@ -270,9 +270,9 @@ find_monitor_by_coordinate(const int16_t x, const int16_t y)
 
 struct monitor *
 add_monitor(xcb_randr_output_t id, const int16_t x, const int16_t y,
-	    const uint16_t width,const uint16_t height)
+	    const uint16_t width, const uint16_t height)
 {
-	struct item *item;
+	struct list_item *item;
 	struct monitor *mon = malloc(sizeof(struct monitor));
 
 	if (NULL == (item = add_item(&monitor_list)))
@@ -292,8 +292,6 @@ add_monitor(xcb_randr_output_t id, const int16_t x, const int16_t y,
 	return mon;
 }
 
-/* TODO Change both of these to get actual circular behavior rather than just two conditionals */
-/* TODO Also when you kill a window and then try executing (it probably changes its pointer->root) */
 /* Actually need a underlying window (fake) for detecting focus with mouse change... */
 /* Causes some random death when hibernating */
 void
@@ -302,7 +300,7 @@ switch_screen(const Arg *arg)
 	int16_t cur_x;
 	int16_t cur_y;
 
-	struct item *item, *head, *tail;
+	struct list_item *item, *head, *tail;
 
 	tail = head = focused_monitor->item;
 
@@ -335,7 +333,6 @@ switch_screen(const Arg *arg)
 			item = tail;
 		else
 			item = item->prev;
-
 	}
 
 	// The opposite would also be NULL
@@ -354,24 +351,14 @@ switch_screen(const Arg *arg)
 	xcb_warp_pointer(conn, XCB_NONE, screen->root, 0, 0, 0, 0, cur_x, cur_y);
 }
 
-/* Should also switch focused monitors  (it is definative) */
 void
 change_screen(const Arg *arg)
 {
-	struct item *item, *head, *tail;
+	struct list_item *item, *head, *tail;
 	float x_percentage, y_percentage;
 
-	if (NULL == focus_window || NULL == focus_window->monitor)
+	if (NULL == current_window || NULL == current_window->monitor)
 		return;
-
-	//
-	/* struct item *head = focus_window->monitor->item; */
-	/* struct item *tail, *item = NULL; */
-
-	/* if (arg->i == SANEWM_NEXT_SCREEN) */
-	/*	item = focus_window->monitor->item->next; */
-
-
 
 	tail = head = focused_monitor->item;
 
@@ -404,45 +391,28 @@ change_screen(const Arg *arg)
 			item = tail;
 		else
 			item = item->prev;
-
 	}
-
-	/* if (arg->i == SANEWM_NEXT_SCREEN) { */
-	/*	if (focus_window->monitor->item->next != NULL) { */
-	/*		item = focus_window->monitor->item->next; */
-	/*	} else { */
-	/*		item = focus_window->monitor->item->prev; */
-	/*	} */
-	/* } else { */
-	/*	if (focus_window->monitor->item->prev != NULL) { */
-	/*		item = focus_window->monitor->item->prev; */
-	/*	} else { */
-	/*		item = focus_window->monitor->item->next; */
-	/*	} */
-	/* } */
-	/* else */
-	/* item = focus_window->monitor->item->prev; */
 
 	if (NULL == item)
 		return;
 
-	x_percentage = (float)((focus_window->x - focus_window->monitor->x)
-			       / (focus_window->monitor->width));
-	y_percentage = (float)((focus_window->y - focus_window->monitor->y)
-			       / (focus_window->monitor->height));
+	x_percentage = (float)((current_window->x - current_window->monitor->x) /
+			       (current_window->monitor->width));
+	y_percentage = (float)((current_window->y - current_window->monitor->y) /
+			       (current_window->monitor->height));
 
-	focus_window->monitor = item->data;
+	current_window->monitor = item->data;
 
-	focus_window->x = focus_window->monitor->width * x_percentage
-		+ focus_window->monitor->x + 0.5;
-	focus_window->y = focus_window->monitor->height * y_percentage
-		+ focus_window->monitor->y + 0.5;
+	current_window->x = current_window->monitor->width * x_percentage +
+		current_window->monitor->x + 0.5;
+	current_window->y = current_window->monitor->height * y_percentage +
+		current_window->monitor->y + 0.5;
 
-	focused_monitor = focus_window->monitor;
+	focused_monitor = current_window->monitor;
 
 	raise_current_window();
-	fit_on_screen(focus_window);
-	move_limit(focus_window);
-	set_borders(focus_window, true);
-	center_pointer(focus_window->id, focus_window);
+	fit_on_screen(current_window);
+	move_limit(current_window);
+	set_borders(current_window, true);
+	center_pointer(current_window->id, current_window);
 }

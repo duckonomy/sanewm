@@ -15,26 +15,26 @@
 void
 destroy_notify(xcb_generic_event_t *ev)
 {
-	struct client *cl;
+	struct sane_window *window;
 
 	xcb_destroy_notify_event_t *e = (xcb_destroy_notify_event_t *) ev;
-	if (NULL != focus_window && focus_window->id == e->window)
-		focus_window = NULL;
+	if (NULL != current_window && current_window->id == e->window)
+		current_window = NULL;
 
-	cl = find_client(& e->window);
+	window = find_window(& e->window);
 
 	/* Find this window in list of clients and forget about it. */
-	if (NULL != cl)
-		forget_window(cl->id);
+	if (NULL != window)
+		forget_window_id(window->id);
 
-	update_client_list();
+	update_window_list();
 }
 
 void
 enter_notify(xcb_generic_event_t *ev)
 {
 	xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
-	struct client *client;
+	struct sane_window *window;
 	unsigned int modifiers[] = {
 		0,
 		XCB_MOD_MASK_LOCK,
@@ -60,7 +60,7 @@ enter_notify(xcb_generic_event_t *ev)
 		/* If we're entering the same window we focus now,
 		 * then don't bother focusing. */
 
-		if (NULL != focus_window && e->event == focus_window->id)
+		if (NULL != current_window && e->event == current_window->id)
 			return;
 
 
@@ -68,14 +68,14 @@ enter_notify(xcb_generic_event_t *ev)
 		 * can find it among the windows we know about.
 		 * If not, just keep focus in the old window. */
 
-		client = find_client(&e->event);
-		if (NULL == client)
+		window = find_window(&e->event);
+		if (NULL == window)
 			return;
 
 		/* skip this if not is_sloppy
 		 * we'll focus on click instead (see button_press function)
 		 * thus we have to grab left click button on that window
-		 * the grab is removed at the end of the set_focus function,
+		 * the grab is removed at the end of the focus_window function,
 		 * in the grab_buttons when not in sloppy mode
 		 */
 		if (!is_sloppy) {
@@ -84,7 +84,7 @@ enter_notify(xcb_generic_event_t *ev)
 						0, // owner_events => 0 means
 						   // the grab_window won't
 						   // receive this event
-						client->id,
+						window->id,
 						XCB_EVENT_MASK_BUTTON_PRESS,
 						XCB_GRAB_MODE_ASYNC,
 						XCB_GRAB_MODE_ASYNC,
@@ -95,8 +95,8 @@ enter_notify(xcb_generic_event_t *ev)
 			return;
 		}
 
-		set_focus(client);
-		set_borders(client, true);
+		focus_window(window);
+		set_borders(window, true);
 	}
 }
 
@@ -104,7 +104,7 @@ void
 unmap_notify(xcb_generic_event_t *ev)
 {
 	xcb_unmap_notify_event_t *e = (xcb_unmap_notify_event_t *)ev;
-	struct client *client = NULL;
+	struct sane_window *window = NULL;
 	/*
 	 * Find the window in our current workspace list, then forget about it.
 	 * Note that we might not know about the window we got the Unmap_Notify
@@ -119,15 +119,15 @@ unmap_notify(xcb_generic_event_t *ev)
 	 * If we do this, we need to keep track of our own windows and
 	 * ignore Unmap_Notify on them.
 	 */
-	client = find_client(& e->window);
-	if (NULL == client || client->ws != current_workspace)
+	window = find_window(&e->window);
+	if (NULL == window || window->ws != current_workspace)
 		return;
-	if (focus_window != NULL && client->id == focus_window->id)
-		focus_window = NULL;
-	if (client->iconic == false)
-		forget_client(client);
+	if (current_window != NULL && window->id == current_window->id)
+		current_window = NULL;
+	if (window->iconic == false)
+		forget_window(window);
 
-	update_client_list();
+	update_window_list();
 }
 
 void
@@ -163,7 +163,7 @@ void
 map_request(xcb_generic_event_t *ev)
 {
 	xcb_map_request_event_t *e = (xcb_map_request_event_t *) ev;
-	struct client *client;
+	struct sane_window *window;
 	long data[] = {
 		XCB_ICCCM_WM_STATE_NORMAL,
 		XCB_NONE
@@ -172,52 +172,52 @@ map_request(xcb_generic_event_t *ev)
 
 	/* The window is trying to map itself on the current workspace,
 	 * but since it's unmapped it probably belongs on another workspace.*/
-	if (NULL != find_client(&e->window))
+	if (NULL != find_window(&e->window))
 		return;
 
-	client = setup_window(e->window);
+	window = setup_window(e->window);
 
-	if (NULL == client)
+	if (NULL == window)
 		return;
 
 	/* Add this window to the current workspace. */
-	add_to_workspace(client, current_workspace);
+	add_to_workspace(window, current_workspace);
 
 	/* If we don't have specific coord map it where the pointer is.*/
-	if (!client->set_by_user) {
-		if (!get_pointer(&screen->root, &client->x, &client->y))
-			client->x = client->y = 0;
+	if (!window->set_by_user) {
+		if (!get_pointer(&screen->root, &window->x, &window->y))
+			window->x = window->y = 0;
 
-		client->x -= client->width / 2;
-		client->y -= client->height / 2;
-		move_window(client->id, client->x, client->y);
+		window->x -= window->width / 2;
+		window->y -= window->height / 2;
+		move_window(window->id, window->x, window->y);
 	}
 
 	/* Find the physical output this window will be on if RANDR is active */
 	if (-1 != randr_base) {
-		/* client->monitor = find_monitor_by_coordinate(client->x, client->y); */
-		client->monitor = focused_monitor;
+		/* window->monitor = find_monitor_by_coordinate(window->x, window->y); */
+		window->monitor = focused_monitor;
 
-		if (NULL == client->monitor && NULL != monitor_list)
+		if (NULL == window->monitor && NULL != monitor_list)
 			/* Window coordinates are outside all physical monitors.
 			 * Choose the first screen.*/
-			client->monitor = monitor_list->data;
+			window->monitor = monitor_list->data;
 	}
 
-	fit_on_screen(client);
+	fit_on_screen(window);
 
 	/* Show window on screen. */
-	xcb_map_window(conn, client->id);
-	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+	xcb_map_window(conn, window->id);
+	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id,
 			    ewmh->_NET_WM_STATE, ewmh->_NET_WM_STATE, 32, 2, data);
 
-	center_pointer(e->window, client);
-	update_client_list();
+	center_pointer(e->window, window);
+	update_window_list();
 
-	if (!client->maxed)
-		set_borders(client, true);
+	if (!window->maxed)
+		set_borders(window, true);
 	// always focus new window
-	set_focus(client);
+	focus_window(window);
 }
 
 
@@ -304,31 +304,31 @@ void
 configure_request(xcb_generic_event_t *ev)
 {
 	xcb_configure_request_event_t *e = (xcb_configure_request_event_t *)ev;
-	struct client *client;
+	struct sane_window *window;
 	struct winconf wc;
 	int16_t monitor_x, monitor_y;
 	uint16_t monitor_width, monitor_height;
 	uint32_t values[1];
 
-	if ((client = find_client(&e->window))) { /* Find the client. */
-		get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, client);
+	if ((window = find_window(&e->window))) { /* Find the window. */
+		get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, window);
 
 		if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
-			if (!client->maxed && !client->horizontal_maxed)
-				client->width = e->width;
+			if (!window->maxed && !window->horizontal_maxed)
+				window->width = e->width;
 
 		if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
-			if (!client->maxed && !client->vertical_maxed)
-				client->height = e->height;
+			if (!window->maxed && !window->vertical_maxed)
+				window->height = e->height;
 
 
 		if (e->value_mask & XCB_CONFIG_WINDOW_X)
-			if (!client->maxed && !client->horizontal_maxed)
-				client->x = e->x;
+			if (!window->maxed && !window->horizontal_maxed)
+				window->x = e->x;
 
 		if (e->value_mask & XCB_CONFIG_WINDOW_Y)
-			if (!client->maxed && !client->vertical_maxed)
-				client->y = e->y;
+			if (!window->maxed && !window->vertical_maxed)
+				window->y = e->y;
 
 		/* XXX Do we really need to pass on sibling and stack mode
 		 * configuration? Do we want to? */
@@ -345,13 +345,13 @@ configure_request(xcb_generic_event_t *ev)
 		}
 
 		/* Check if window fits on screen after resizing. */
-		if (!client->maxed) {
-			resize_limit(client);
-			move_limit(client);
-			fit_on_screen(client);
+		if (!window->maxed) {
+			resize_limit(window);
+			move_limit(window);
+			fit_on_screen(window);
 		}
 
-		set_borders(client, true);
+		set_borders(window, true);
 	} else {
 		/* Unmapped window, pass all options except border width. */
 		wc.x = e->x;
@@ -380,20 +380,20 @@ mouse_motion(const Arg *arg)
 	pointer = xcb_query_pointer_reply(conn,
 					  xcb_query_pointer(conn, screen->root), 0);
 
-	if (!pointer || focus_window->maxed) {
+	if (!pointer || current_window->maxed) {
 		free(pointer);
 		return;
 	}
 
 	mx   = pointer->root_x;
 	my   = pointer->root_y;
-	winx = focus_window->x;
-	winy = focus_window->y;
-	winw = focus_window->width;
-	winh = focus_window->height;
+	winx = current_window->x;
+	winy = current_window->y;
+	winw = current_window->width;
+	winh = current_window->height;
 
 	xcb_cursor_t cursor;
-	struct client example;
+	struct sane_window example;
 	raise_current_window();
 
 	if (arg->i == SANEWM_MOVE)
@@ -451,16 +451,16 @@ mouse_motion(const Arg *arg)
 			if (arg->i == SANEWM_RESIZE) {
 				ev = (xcb_motion_notify_event_t*)e;
 
-				mouse_resize(focus_window, winw + ev->root_x - mx,
+				mouse_resize(current_window, winw + ev->root_x - mx,
 					     winh + ev->root_y - my);
 
-				set_borders(focus_window, true);
+				set_borders(current_window, true);
 			}
 
 			ungrab = true;
 			break;
 		}
-	} while (!ungrab && focus_window != NULL);
+	} while (!ungrab && current_window != NULL);
 
 	free(pointer);
 	free(e);
@@ -477,7 +477,7 @@ void
 button_press(xcb_generic_event_t *ev)
 {
 	xcb_button_press_event_t *e = (xcb_button_press_event_t *)ev;
-	struct client *client;
+	struct sane_window *window;
 	unsigned int i;
 
 
@@ -485,13 +485,13 @@ button_press(xcb_generic_event_t *ev)
 	    e->detail == XCB_BUTTON_INDEX_1 &&
 	    CLEAN_MASK(e->state) == 0) {
 		// skip if already focused
-		if (NULL != focus_window && e->event == focus_window->id)
+		if (NULL != current_window && e->event == current_window->id)
 			return;
-		client = find_client(&e->event);
-		if (NULL != client) {
-			set_focus(client);
-			raise_window(client->id);
-			set_borders(client, true);
+		window = find_window(&e->event);
+		if (NULL != window) {
+			focus_window(window);
+			raise_window(window->id);
+			set_borders(window, true);
 		}
 		return;
 	}
@@ -501,7 +501,7 @@ button_press(xcb_generic_event_t *ev)
 		    buttons[i].button == e->detail &&
 		    CLEAN_MASK(buttons[i].mask)
 		    == CLEAN_MASK(e->state)){
-			if ((focus_window == NULL) &&
+			if ((current_window == NULL) &&
 			    buttons[i].func == mouse_motion)
 				return;
 			if (buttons[i].root_only) {
@@ -518,52 +518,53 @@ void
 client_message(xcb_generic_event_t *ev)
 {
 	xcb_client_message_event_t *e = (xcb_client_message_event_t *)ev;
-	struct client *cl;
+	struct sane_window *window;
 
 	if ((e->type == ATOM[wm_change_state] &&
 	     e->format == 32 &&
 	     e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) ||
 	    e->type == ewmh->_NET_ACTIVE_WINDOW) {
-		cl = find_client(&e->window);
+		window = find_window(&e->window);
 
-		if (NULL == cl)
+		if (NULL == window)
 			return;
 
-		if (false == cl->iconic) {
+		if (false == window->iconic) {
 			if (e->type == ewmh->_NET_ACTIVE_WINDOW) {
-				set_focus(cl);
-				raise_window(cl->id);
-			} else {
-				hide();
+				focus_window(window);
+				raise_window(window->id);
 			}
+			/* else { */
+			/*	hide(); */
+			/* } */
 
 			return;
 		}
 
-		cl->iconic = false;
-		xcb_map_window(conn, cl->id);
-		set_focus(cl);
+		window->iconic = false;
+		xcb_map_window(conn, window->id);
+		focus_window(window);
 	}
 	else if (e->type == ewmh->_NET_CURRENT_DESKTOP)
 		change_workspace_helper(e->data.data32[0]);
 	else if (e->type == ewmh->_NET_WM_STATE && e->format == 32) {
-		cl = find_client(&e->window);
-		if (NULL == cl)
+		window = find_window(&e->window);
+		if (NULL == window)
 			return;
 		if (e->data.data32[1] == ewmh->_NET_WM_STATE_FULLSCREEN ||
 		    e->data.data32[2] == ewmh->_NET_WM_STATE_FULLSCREEN) {
 			switch (e->data.data32[0]) {
 			case XCB_EWMH_WM_STATE_REMOVE:
-				unmaximize_window(cl);
+				unmaximize_window(window);
 				break;
 			case XCB_EWMH_WM_STATE_ADD:
-				maximize_window(cl, false);
+				maximize_window(window, false);
 				break;
 			case XCB_EWMH_WM_STATE_TOGGLE:
-				if (cl->maxed)
-					unmaximize_window(cl);
+				if (window->maxed)
+					unmaximize_window(window);
 				else
-					maximize_window(cl, false);
+					maximize_window(window, false);
 				break;
 
 			default:
@@ -571,8 +572,8 @@ client_message(xcb_generic_event_t *ev)
 			}
 		}
 	} else if (e->type == ewmh->_NET_WM_DESKTOP && e->format == 32) {
-		cl = find_client(&e->window);
-		if (NULL == cl)
+		window = find_window(&e->window);
+		if (NULL == window)
 			return;
 		/*
 		 * e->data.data32[1] Source indication
@@ -582,9 +583,9 @@ client_message(xcb_generic_event_t *ev)
 		 *
 		 * e->data.data32[0] new workspace
 		 */
-		delete_from_workspace(cl);
-		add_to_workspace(cl, e->data.data32[0]);
-		xcb_unmap_window(conn, cl->id);
+		delete_from_workspace(window);
+		add_to_workspace(window, e->data.data32[0]);
+		xcb_unmap_window(conn, window->id);
 		xcb_flush(conn);
 	}
 }

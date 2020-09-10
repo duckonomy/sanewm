@@ -4,7 +4,7 @@
 #include "list.h"
 
 void
-move_to_head(struct item **main_list, struct item *item)
+move_to_head(struct list_item **main_list, struct list_item *item)
 {
 	// Move element in item to the head of list main_list.
 	if (NULL == item || NULL == main_list || NULL == *main_list)
@@ -28,14 +28,14 @@ move_to_head(struct item **main_list, struct item *item)
 	*main_list = item;
 }
 
-struct item *
-add_item(struct item **main_list)
+struct list_item *
+add_item(struct list_item **main_list)
 {                                   // Create space for a new item and add it to the head of main_list.
 				    // Returns item or NULL if out of memory.
-	struct item *item;
+	struct list_item *item;
 
-	if (NULL == (item = (struct item *)
-		     malloc(sizeof (struct item))))
+	if (NULL == (item = (struct list_item *)
+		     malloc(sizeof (struct list_item))))
 		return NULL;
 	/* First in the list. */
 	if (NULL == *main_list)
@@ -51,9 +51,9 @@ add_item(struct item **main_list)
 }
 
 void
-delete_item(struct item **main_list, struct item *item)
+delete_item(struct list_item **main_list, struct list_item *item)
 {
-	struct item *ml = *main_list;
+	struct list_item *ml = *main_list;
 
 	if (NULL == main_list ||
 	    NULL == *main_list ||
@@ -75,7 +75,7 @@ delete_item(struct item **main_list, struct item *item)
 }
 
 void
-free_item(struct item **list, int *stored,struct item *item)
+free_item(struct list_item **list, int *stored,struct list_item *item)
 {
 	if (NULL == list || NULL == *list || NULL == item)
 		return;
@@ -92,10 +92,10 @@ free_item(struct item **list, int *stored,struct item *item)
 
 
 void
-delete_all_items(struct item **list, int *stored)
+delete_all_items(struct list_item **list, int *stored)
 {                                   // Delete all elements in list and free memory resources.
-	struct item *item;
-	struct item *next;
+	struct list_item *item;
+	struct list_item *next;
 
 	for (item = *list; item != NULL; item = next) {
 		next = item->next;
@@ -108,9 +108,9 @@ delete_all_items(struct item **list, int *stored)
 }
 
 void
-list_items(struct item *main_list)
+list_items(struct list_item *main_list)
 {
-	struct item *item;
+	struct list_item *item;
 	int i;
 	for (item = main_list, i = 1; item != NULL; item = item->next, ++i)
 		printf("item #%d (stored at %p).\n", i, (void *)item);

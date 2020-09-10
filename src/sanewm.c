@@ -40,11 +40,11 @@ xcb_ewmh_connection_t *ewmh = NULL;        // Ewmh Connection.
 xcb_screen_t     *screen = NULL;           // Our current screen.
 int randr_base = 0;                         // Beginning of RANDR extension events.
 
-struct client *focus_window = NULL;            // Current focus window.
+struct sane_window *current_window = NULL;            // Current focus window.
 xcb_drawable_t top_win = 0;           // Window always on top.
-struct item *window_list = NULL;        // Global list of all client windows.
-struct item *monitor_list = NULL;        // List of all physical monitor outputs.
-struct item *workspace_list[WORKSPACES];
+struct list_item *window_list = NULL;        // Global list of all client windows.
+struct list_item *monitor_list = NULL;        // List of all physical monitor outputs.
+struct list_item *workspace_list[WORKSPACES];
 uint8_t current_workspace = 0;                  // Current workspace.
 
 xcb_randr_output_t primary_output_monitor;
@@ -79,7 +79,7 @@ cleanup(void)
 	free(ev);
 	if (monitor_list)
 		delete_all_items(&monitor_list,NULL);
-	struct item *curr, *workspace_item;
+	struct list_item *curr, *workspace_item;
 	for (int i = 0; i < WORKSPACES; ++i){
 		if (!workspace_list[i])
 			continue;
@@ -136,7 +136,7 @@ run(void)
 		if ((ev = xcb_wait_for_event(conn))) {
 			if (ev->response_type == randr_base +
 			    XCB_RANDR_SCREEN_CHANGE_NOTIFY)
-				getrandr();
+				get_randr();
 
 			if (events[ev->response_type & ~0x80])
 				events[ev->response_type & ~0x80](ev);

@@ -26,11 +26,11 @@ extern int randr_base;                         // Beginning of RANDR extension e
 
 extern uint8_t current_workspace;                  // Current workspace.
 
-extern struct client *focus_window;            // Current focus window.
+extern struct sane_window *current_window;            // Current focus window.
 extern xcb_drawable_t top_win;           // Window always on top.
-extern struct item *window_list;        // Global list of all client windows.
-extern struct item *monitor_list;        // List of all physical monitor outputs.
-extern struct item *workspace_list[WORKSPACES];
+extern struct list_item *window_list;        // Global list of all client windows.
+extern struct list_item *monitor_list;        // List of all physical monitor outputs.
+extern struct list_item *workspace_list[WORKSPACES];
 
 extern xcb_randr_output_t primary_output_monitor;
 extern struct monitor *focused_monitor;
