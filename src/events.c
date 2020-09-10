@@ -120,7 +120,9 @@ unmap_notify(xcb_generic_event_t *ev)
 	 * ignore Unmap_Notify on them.
 	 */
 	client = find_client(& e->window);
-	if (NULL == client || client->ws != current_workspace)
+	// TODO Make this compatiable with my model
+	/* if (NULL == client || client->ws != current_workspace) */
+	if (NULL == client || client->ws != current_workspace || client->monitor != focused_monitor)
 		return;
 	if (focus_window != NULL && client->id == focus_window->id)
 		focus_window = NULL;

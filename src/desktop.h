@@ -10,6 +10,7 @@ void change_workspace(const Arg *);
 void next_workspace();
 void previous_workspace();
 void add_to_workspace(struct client *, uint32_t);
+void add_to_monitor_workspace(struct client *, struct monitor *, uint32_t);
 void change_workspace_helper(const uint32_t);
 void send_to_workspace(const Arg *);
 void send_to_next_workspace(const Arg *);

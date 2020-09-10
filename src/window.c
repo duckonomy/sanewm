@@ -38,12 +38,16 @@ void
 focus_next_helper(bool arg)
 {
 	struct client *cl = NULL;
-	struct item *head = workspace_list[current_workspace];
+	// NEXT FIXME Workspace (also change whatever sets "current workspace" and workspace item in client)
+	// Change this list to the list of workspaces in a given monitor
+	/* struct item *head = workspace_list[current_workspace]; */
+	struct item *head = focused_monitor->window_workspace_list[current_workspace];
 	struct item *tail, *item = NULL;
 	// no windows on current workspace
 	if (NULL == head)
 		return;
-	// if no focus on current workspace, find first valid item on list.
+	// if no focus on current workspace,
+	// find first valid item on list of windows in current workspace.
 	if (NULL == focus_window || focus_window->ws != current_workspace) {
 		for (item = head; item != NULL; item = item->next) {
 			cl = item->data;
@@ -52,7 +56,8 @@ focus_next_helper(bool arg)
 		}
 	} else {
 		// find tail of list and make list circular.
-		for (tail = head = item = workspace_list[current_workspace];
+		/* for (tail = head = item = workspace_list[current_workspace]; */
+		for (tail = head = item = focused_monitor->window_workspace_list[current_workspace];
 		     item != NULL;
 		     tail = item, item = item->next);
 		head->prev = tail;
@@ -77,8 +82,10 @@ focus_next_helper(bool arg)
 			} while (item != tail);
 		}
 		// restore list.
-		workspace_list[current_workspace]->prev->next = NULL;
-		workspace_list[current_workspace]->prev = NULL;
+		/* workspace_list[current_workspace]->prev->next = NULL; */
+		focused_monitor->window_workspace_list[current_workspace]->prev->next = NULL;
+		/* workspace_list[current_workspace]->prev = NULL; */
+		focused_monitor->window_workspace_list[current_workspace]->prev = NULL;
 	}
 	if (!item || !(cl = item->data) || cl->iconic)
 		return;
@@ -119,7 +126,7 @@ get_unkill_state(xcb_drawable_t win)
 	uint8_t wsp;
 
 	cookie = xcb_get_property(conn, false, win, ewmh->_NET_WM_STATE_DEMANDS_ATTENTION,
-				  XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(uint8_t));
+				  XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(uint8_t));
 
 	reply  = xcb_get_property_reply(conn, cookie, NULL);
 
@@ -267,7 +274,7 @@ setup_window(xcb_window_t win)
 	struct client *client;
 	xcb_get_property_cookie_t cookie;
 
-
+	// This is where "rules" get set for windows on mapping
 	if (xcb_ewmh_get_wm_window_type_reply(ewmh,
 					      xcb_ewmh_get_wm_window_type(ewmh, win), &win_type, NULL) == 1) {
 		for (i = 0; i < win_type.atoms_len; ++i) {
@@ -660,7 +667,8 @@ snap_window(struct client *client)
 
 	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, focus_window);
 
-	for (item = workspace_list[current_workspace]; item != NULL; item = item->next) {
+	/* for (item = workspace_list[current_workspace]; item != NULL; item = item->next) { */
+	for (item = focused_monitor->window_workspace_list[current_workspace]; item != NULL; item = item->next) {
 		win = item->data;
 
 		if (client != win) {
@@ -1172,7 +1180,8 @@ teleport(const Arg *arg)
 	uint16_t monitor_width, monitor_height;
 
 	if (NULL == focus_window ||
-	    NULL == workspace_list[current_workspace] ||
+	    /* NULL == workspace_list[current_workspace] || */
+	    NULL == focused_monitor->window_workspace_list[current_workspace] ||
 	    focus_window->maxed)
 		return;
 

@@ -80,10 +80,13 @@ cleanup(void)
 	if (monitor_list)
 		delete_all_items(&monitor_list,NULL);
 	struct item *curr, *workspace_item;
+	// TODO Should probably loop through monitor list AND workspace list
 	for (int i = 0; i < WORKSPACES; ++i){
-		if (!workspace_list[i])
+		/* if (!workspace_list[i]) */
+		if (!focused_monitor->window_workspace_list[i])
 			continue;
-		curr = workspace_list[i];
+		/* curr = workspace_list[i]; */
+		curr = focused_monitor->window_workspace_list[i];
 		while (curr) {
 			workspace_item = curr;
 			curr = curr->next;

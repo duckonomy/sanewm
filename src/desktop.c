@@ -9,10 +9,23 @@ delete_from_workspace(struct client *client)
 {
 	if (client->ws < 0)
 		return;
-	delete_item(&workspace_list[client->ws], client->workspace_item);
+	/* delete_item(&workspace_list[client->ws], client->workspace_item); */
+	delete_item(&focused_monitor->window_workspace_list[client->ws], client->workspace_item);
 	client->workspace_item = NULL;
 	client->ws = -1;
 }
+
+// TODO Not necessary
+/* void */
+/* delete_from_monitor_workspace(struct client *client) */
+/* { */
+/*	if (client->ws < 0) */
+/*		return; */
+/*	/\* delete_item(&workspace_list[client->ws], client->workspace_item); *\/ */
+/*	delete_item(&focused_monitor->window_workspace_list[client->ws], client->workspace_item); */
+/*	client->workspace_item = NULL; */
+/*	client->ws = -1; */
+/* } */
 
 void
 change_workspace(const Arg *arg)
@@ -38,7 +51,8 @@ previous_workspace()
 void
 add_to_workspace(struct client *client, uint32_t ws)
 {
-	struct item *item = add_item(&workspace_list[ws]);
+	/* struct item *item = add_item(&workspace_list[ws]); */
+	struct item *item = add_item(&focused_monitor->window_workspace_list[ws]);
 
 	if (client == NULL)
 		return;
@@ -51,6 +65,38 @@ add_to_workspace(struct client *client, uint32_t ws)
 	client->ws = ws;
 	item->data         = client;
 
+	/* Set window hint property so we can survive a crash. Like "fixed" */
+	if (!client->fixed)
+		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+				    ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL,
+				    32, 1, &ws);
+}
+
+// TODO This might not be necessary because above function already uses "focused workspace"
+void
+add_to_monitor_workspace(struct client *client, struct monitor *monitor, uint32_t ws)
+{
+	/* struct item *item = add_item(&workspace_list[ws]); */
+	struct item *item = add_item(&monitor->window_workspace_list[ws]);
+
+	if (client == NULL)
+		return;
+
+	if (NULL == item)
+		return;
+
+	// NOTE HERE Item is the item in the workspace list
+	// TODO This actually solves the item problem
+	/* Remember our place in the workspace window list so it's circular....*/
+	client->workspace_item = item;
+	// TODO This is problematic (i.e. the workspace variable)
+	// Should have this Maybe map this with monitor;
+	// PROG Kinda fixed by identifiying the monitor
+	client->ws = ws;
+	client->monitor = monitor;
+	item->data = client;
+
+	// TODO Does this work with ws?
 	/* Set window hint property so we can survive a crash. Like "fixed" */
 	if (!client->fixed)
 		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
@@ -71,7 +117,10 @@ change_workspace_helper(const uint32_t ws)
 
 	/* Go through list of current ws.
 	 * Unmap everything that isn't fixed. */
-	for (item = workspace_list[current_workspace]; item != NULL;) {
+	/* TODO Make this asynchronous if possible */
+	/* TODO Make this loop through focuse monitor as well */
+	/* for (item = workspace_list[current_workspace]; item != NULL;) { */
+	for (item = focused_monitor->window_workspace_list[current_workspace]; item != NULL;) {
 		client = item->data;
 		item = item->next;
 		set_borders(client, false);
@@ -83,7 +132,8 @@ change_workspace_helper(const uint32_t ws)
 			add_to_workspace(client, ws);
 		}
 	}
-	for (item = workspace_list[ws]; item != NULL; item = item->next) {
+	/* for (item = workspace_list[ws]; item != NULL; item = item->next) { */
+	for (item = focused_monitor->window_workspace_list[ws]; item != NULL;) {
 		client = item->data;
 		if (!client->fixed && !client->iconic)
 			xcb_map_window(conn, client->id);
