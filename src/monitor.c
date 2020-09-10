@@ -302,22 +302,43 @@ switch_screen(const Arg *arg)
 	int16_t cur_x;
 	int16_t cur_y;
 
-	struct item *item;
+	struct item *item, *head, *tail;
 
-	if (arg->i == SANEWM_NEXT_SCREEN) {
-		if (focused_monitor->item->next != NULL) {
-			item = focused_monitor->item->next;
-		} else {
-			item = focused_monitor->item->prev;
-		}
-	} else {
-		if (focused_monitor->item->prev != NULL) {
-			item = focused_monitor->item->prev;
-		} else {
-			item = focused_monitor->item->next;
-		}
+	tail = head = focused_monitor->item;
+
+	item = focused_monitor->item;
+	while (item != NULL) {
+		tail = item;
+		item = item->next;
 	}
 
+	item = focused_monitor->item;
+	while (item != NULL) {
+		head = item;
+		item = item->prev;
+	}
+
+	// FIXME for some reason (maybe a running process) this breaks lol
+	/* tail->next = head; */
+	/* head->prev = tail; */
+
+	if (arg->i == SANEWM_NEXT_SCREEN) {
+
+		item = focused_monitor->item;
+		if (item->next == NULL)
+			item = head;
+		else
+			item = item->next;
+	} else {
+		item = focused_monitor->item;
+		if (item->prev == NULL)
+			item = tail;
+		else
+			item = item->prev;
+
+	}
+
+	// The opposite would also be NULL
 	if (item == NULL)
 		return;
 
@@ -337,7 +358,7 @@ switch_screen(const Arg *arg)
 void
 change_screen(const Arg *arg)
 {
-	struct item *item;
+	struct item *item, *head, *tail;
 	float x_percentage, y_percentage;
 
 	if (NULL == focus_window || NULL == focus_window->monitor)
@@ -350,19 +371,55 @@ change_screen(const Arg *arg)
 	/* if (arg->i == SANEWM_NEXT_SCREEN) */
 	/*	item = focus_window->monitor->item->next; */
 
-	if (arg->i == SANEWM_NEXT_SCREEN) {
-		if (focus_window->monitor->item->next != NULL) {
-			item = focus_window->monitor->item->next;
-		} else {
-			item = focus_window->monitor->item->prev;
-		}
-	} else {
-		if (focus_window->monitor->item->prev != NULL) {
-			item = focus_window->monitor->item->prev;
-		} else {
-			item = focus_window->monitor->item->next;
-		}
+
+
+	tail = head = focused_monitor->item;
+
+	item = focused_monitor->item;
+	while (item != NULL) {
+		tail = item;
+		item = item->next;
 	}
+
+	item = focused_monitor->item;
+	while (item != NULL) {
+		head = item;
+		item = item->prev;
+	}
+
+	// FIXME for some reason (maybe a running process) this breaks lol
+	/* tail->next = head; */
+	/* head->prev = tail; */
+
+	if (arg->i == SANEWM_NEXT_SCREEN) {
+
+		item = focused_monitor->item;
+		if (item->next == NULL)
+			item = head;
+		else
+			item = item->next;
+	} else {
+		item = focused_monitor->item;
+		if (item->prev == NULL)
+			item = tail;
+		else
+			item = item->prev;
+
+	}
+
+	/* if (arg->i == SANEWM_NEXT_SCREEN) { */
+	/*	if (focus_window->monitor->item->next != NULL) { */
+	/*		item = focus_window->monitor->item->next; */
+	/*	} else { */
+	/*		item = focus_window->monitor->item->prev; */
+	/*	} */
+	/* } else { */
+	/*	if (focus_window->monitor->item->prev != NULL) { */
+	/*		item = focus_window->monitor->item->prev; */
+	/*	} else { */
+	/*		item = focus_window->monitor->item->next; */
+	/*	} */
+	/* } */
 	/* else */
 	/* item = focus_window->monitor->item->prev; */
 

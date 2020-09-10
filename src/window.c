@@ -933,10 +933,11 @@ maximize_window(struct client *client, uint8_t with_offsets){
 	get_monitor_size(with_offsets, &monitor_x, &monitor_y, &monitor_width, &monitor_height, client);
 	maximize_helper(client, monitor_x, monitor_y, monitor_width, monitor_height);
 	raise_current_window();
-	if (!with_offsets) {
-		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
-				    ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 1, &ewmh->_NET_WM_STATE_FULLSCREEN);
-	}
+	// TODO Get rid of ewmh fullscreen
+	/* if (!with_offsets) { */
+	/*	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id, */
+	/*			    ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 1, &ewmh->_NET_WM_STATE_FULLSCREEN); */
+	/* } */
 	xcb_flush(conn);
 }
 

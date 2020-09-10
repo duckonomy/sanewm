@@ -68,8 +68,8 @@ grab_keys(void)
 
 		for (k = 0; keycode[k] != XCB_NO_SYMBOL; ++k)
 			for (m = 0; m < LENGTH(modifiers); ++m)
-				xcb_grab_key(conn, 1, screen->root, keys[i].mod
-					     | modifiers[m], keycode[k],
+				xcb_grab_key(conn, 1, screen->root, keys[i].mod |
+					     modifiers[m], keycode[k],
 					     XCB_GRAB_MODE_ASYNC, // pointer mode
 					     XCB_GRAB_MODE_ASYNC); // keyboard mode
 		free(keycode); // allocated in xcb_get_keycodes()
