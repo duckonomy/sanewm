@@ -1594,7 +1594,7 @@ setup_screen(void)
 		xcb_randr_get_output_primary_reply(conn, xcb_randr_get_output_primary(conn, screen->root), NULL);
 
 	primary_output_monitor = gpo->output;
-	focused_monitor = find_monitor(primary_output_monitor);
+	current_monitor = find_monitor(primary_output_monitor);
 
 	if (NULL != reply)
 		free(reply);

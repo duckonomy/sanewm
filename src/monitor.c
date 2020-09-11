@@ -323,15 +323,15 @@ change_monitor(const Arg *arg)
 
 	struct list_item *item, *head, *tail;
 
-	tail = head = focused_monitor->item;
+	tail = head = current_monitor->item;
 
-	item = focused_monitor->item;
+	item = current_monitor->item;
 	while (item != NULL) {
 		tail = item;
 		item = item->next;
 	}
 
-	item = focused_monitor->item;
+	item = current_monitor->item;
 	while (item != NULL) {
 		head = item;
 		item = item->prev;
@@ -343,13 +343,13 @@ change_monitor(const Arg *arg)
 
 	if (arg->i == SANEWM_NEXT_SCREEN) {
 
-		item = focused_monitor->item;
+		item = current_monitor->item;
 		if (item->next == NULL)
 			item = head;
 		else
 			item = item->next;
 	} else {
-		item = focused_monitor->item;
+		item = current_monitor->item;
 		if (item->prev == NULL)
 			item = tail;
 		else
@@ -362,12 +362,12 @@ change_monitor(const Arg *arg)
 
 	struct monitor *other_monitor = item->data;
 
-	focused_monitor = other_monitor;
+	current_monitor = other_monitor;
 
 	other_monitor = NULL;
 
-	cur_x = focused_monitor->x + focused_monitor->width / 2;
-	cur_y = focused_monitor->y + focused_monitor->height / 2;
+	cur_x = current_monitor->x + current_monitor->width / 2;
+	cur_y = current_monitor->y + current_monitor->height / 2;
 
 	xcb_warp_pointer(conn, XCB_NONE, screen->root, 0, 0, 0, 0, cur_x, cur_y);
 }
@@ -381,15 +381,15 @@ send_to_monitor(const Arg *arg)
 	if (NULL == current_window || NULL == current_window->monitor)
 		return;
 
-	tail = head = focused_monitor->item;
+	tail = head = current_monitor->item;
 
-	item = focused_monitor->item;
+	item = current_monitor->item;
 	while (item != NULL) {
 		tail = item;
 		item = item->next;
 	}
 
-	item = focused_monitor->item;
+	item = current_monitor->item;
 	while (item != NULL) {
 		head = item;
 		item = item->prev;
@@ -400,14 +400,13 @@ send_to_monitor(const Arg *arg)
 	/* head->prev = tail; */
 
 	if (arg->i == SANEWM_NEXT_SCREEN) {
-
-		item = focused_monitor->item;
+		item = current_monitor->item;
 		if (item->next == NULL)
 			item = head;
 		else
 			item = item->next;
 	} else {
-		item = focused_monitor->item;
+		item = current_monitor->item;
 		if (item->prev == NULL)
 			item = tail;
 		else
@@ -429,7 +428,7 @@ send_to_monitor(const Arg *arg)
 	current_window->y = current_window->monitor->height * y_percentage +
 		current_window->monitor->y + 0.5;
 
-	focused_monitor = current_window->monitor;
+	current_monitor = current_window->monitor;
 
 	raise_current_window();
 	fit_window_on_screen(current_window);

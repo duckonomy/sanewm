@@ -50,7 +50,7 @@ extern struct list_item *monitor_list;
 extern struct list_item *workspace_list[WORKSPACES];
 
 extern xcb_randr_output_t primary_output_monitor;
-extern struct monitor *focused_monitor;
+extern struct monitor *current_monitor;
 extern const char *atom_names[NUM_ATOMS][1];
 extern xcb_atom_t ATOM[NUM_ATOMS];
 extern struct conf conf;

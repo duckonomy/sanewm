@@ -56,7 +56,7 @@ struct list_item *workspace_list[WORKSPACES];
 uint8_t current_workspace = 0;
 
 xcb_randr_output_t primary_output_monitor;
-struct monitor *focused_monitor;
+struct monitor *current_monitor;
 
 const char *atom_names[NUM_ATOMS][1] = {
 	{"WM_DELETE_WINDOW"},

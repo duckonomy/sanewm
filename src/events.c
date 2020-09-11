@@ -190,7 +190,6 @@ map_request(xcb_generic_event_t *ev)
 		XCB_NONE
 	};
 
-
 	/* The window is trying to map itself on the current workspace,
 	 * but since it's unmapped it probably belongs on another workspace.*/
 	if (NULL != find_window(&e->window))
@@ -217,7 +216,7 @@ map_request(xcb_generic_event_t *ev)
 	/* Find the physical output this window will be on if RANDR is active */
 	if (-1 != randr_base) {
 		/* window->monitor = find_monitor_by_coordinate(window->x, window->y); */
-		window->monitor = focused_monitor;
+		window->monitor = current_monitor;
 
 		if (NULL == window->monitor && NULL != monitor_list)
 			/* Window coordinates are outside all physical monitors.
