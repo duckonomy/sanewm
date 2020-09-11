@@ -1,3 +1,24 @@
+/* Copyright (c) 2017-2020 Ian Park
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef SANEWM_WINDOW_H
 #define SANEWM_WINDOW_H
 
@@ -18,7 +39,6 @@ void fullscreen_window(const Arg *);
 void unmaximize_window(struct sane_window *);
 void maximize_window(struct sane_window *, uint8_t);
 void maximize_window_helper(struct sane_window *,uint16_t, uint16_t, uint16_t, uint16_t);
-/* void hide(void); */
 void focus_next_window(const Arg *);
 void update_window_list(void);
 struct sane_window *setup_window(xcb_window_t);
@@ -27,6 +47,7 @@ void fix_window(struct sane_window *);
 void focus_next_window_helper(bool);
 void arrange_windows(void);
 void delete_window();
+void kill_window();
 void check_window_name(struct sane_window *);
 bool check_window_state_unkill(xcb_drawable_t);
 void always_on_top_window();

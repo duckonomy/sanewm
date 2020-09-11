@@ -1,17 +1,25 @@
-/* SaneWM, a floating WM
- * Copyright (c) 2017, 2020 Ian Park, contact at duckonomy dot org.
+/* SaneWM, a floating WM with +good+ multihead support
+ * Copyright (c) 2017-2020 Ian Park
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -33,24 +41,23 @@
 xcb_generic_event_t *ev = NULL;
 void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 unsigned int num_lock_mask = 0;
-bool is_sloppy = true;              // by default use sloppy focus
-int sig_code = 0;                           // Signal code. Non-zero if we've been interruped by a signal.
-xcb_connection_t *conn = NULL;             // Connection to X server.
-xcb_ewmh_connection_t *ewmh = NULL;        // Ewmh Connection.
-xcb_screen_t     *screen = NULL;           // Our current screen.
-int randr_base = 0;                         // Beginning of RANDR extension events.
+bool is_sloppy = true;
+int sig_code = 0;
+xcb_connection_t *conn = NULL;
+xcb_ewmh_connection_t *ewmh = NULL;
+xcb_screen_t     *screen = NULL;
+int randr_base = 0;
 
-struct sane_window *current_window = NULL;            // Current focus window.
-xcb_drawable_t top_win = 0;           // Window always on top.
-struct list_item *window_list = NULL;        // Global list of all client windows.
-struct list_item *monitor_list = NULL;        // List of all physical monitor outputs.
+struct sane_window *current_window = NULL;
+xcb_drawable_t top_win = 0;
+struct list_item *window_list = NULL;
+struct list_item *monitor_list = NULL;
 struct list_item *workspace_list[WORKSPACES];
-uint8_t current_workspace = 0;                  // Current workspace.
+uint8_t current_workspace = 0;
 
 xcb_randr_output_t primary_output_monitor;
 struct monitor *focused_monitor;
 
-///---Global configuration.---///
 const char *atom_names[NUM_ATOMS][1] = {
 	{"WM_DELETE_WINDOW"},
 	{"WM_CHANGE_STATE"}
@@ -59,9 +66,6 @@ const char *atom_names[NUM_ATOMS][1] = {
 xcb_atom_t ATOM[NUM_ATOMS];
 
 struct conf conf;
-
-///---Function bodies---///
-
 
 void
 sanewm_exit()
@@ -112,9 +116,6 @@ start(const Arg *arg)
 	if (fork())
 		return;
 
-	//	if (conn)
-	//		close(screen->root);
-
 	setsid();
 	execvp((char*)arg->com[0], (char**)arg->com);
 }
@@ -126,7 +127,6 @@ run(void)
 	sig_code = 0;
 
 	while (0 == sig_code) {
-		/* the WM is running */
 		xcb_flush(conn);
 
 		if (xcb_connection_has_error(conn)){
@@ -192,56 +192,17 @@ setup(int scrno)
 
 	xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
 
-	xcb_xrm_database_t* db = xcb_xrm_database_from_default(conn);
-
-	// Load the default config anyway.
-	conf.border_width			= borders[1];
-	conf.outer_border		 = borders[0];
-	conf.focus_color				 = get_color(colors[0]);
-	conf.unfocus_color			 = get_color(colors[1]);
-	conf.fixed_color				 = get_color(colors[2]);
-	conf.unkill_color				= get_color(colors[3]);
-	conf.outer_border_color = get_color(colors[5]);
-	conf.fixed_unkill_color	= get_color(colors[4]);
-	conf.empty_color				= get_color(colors[6]);
-	conf.inverted_colors	= inverted_colors;
-	conf.enable_compton	 = false;
-
-	if (db != NULL) {
-		char* value;
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.border_width", NULL, &value) >= 0)
-			conf.border_width = atoi(value);
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.outer_border", NULL, &value) >= 0)
-			conf.outer_border = atoi(value);
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.focus_color", NULL, &value) >= 0)
-			conf.focus_color = get_color(value);
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.unfocus_color", NULL, &value) >= 0)
-			conf.unfocus_color = get_color(value);
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.fixed_color", NULL, &value) >= 0)
-			conf.fixed_color = get_color(value);
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.unkill_color", NULL, &value) >= 0)
-			conf.unkill_color = get_color(value);
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.outer_border_color", NULL, &value) >= 0)
-			conf.outer_border_color = get_color(value);
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.fixed_unkill_color", NULL, &value) >= 0)
-			conf.fixed_unkill_color = get_color(value);
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.inverted_colors", NULL, &value) >= 0)
-			conf.inverted_colors = strcmp(value, "true") == 0;
-
-		if (xcb_xrm_resource_get_string(db, "sanewm.enable_compton", NULL, &value) >= 0)
-			conf.enable_compton = strcmp(value, "true") == 0;
-	}
-
-	xcb_xrm_database_free(db);
+	conf.border_width		= borders[1];
+	conf.outer_border		= borders[0];
+	conf.focus_color		= get_color(colors[0]);
+	conf.unfocus_color		= get_color(colors[1]);
+	conf.fixed_color		= get_color(colors[2]);
+	conf.unkill_color		= get_color(colors[3]);
+	conf.outer_border_color		= get_color(colors[5]);
+	conf.fixed_unkill_color		= get_color(colors[4]);
+	conf.empty_color		= get_color(colors[6]);
+	conf.inverted_colors		= inverted_colors;
+	conf.enable_compton		= false;
 
 	for (i = 0; i < NUM_ATOMS; ++i)
 		ATOM[i] = get_atom(atom_names[i][0]);

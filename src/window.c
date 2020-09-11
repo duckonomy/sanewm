@@ -1,3 +1,24 @@
+/* Copyright (c) 2017-2020 Ian Park
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <string.h>
 
 #include "window.h"
@@ -1122,31 +1143,6 @@ max_half_half_window(const Arg *arg)
 	set_window_borders(current_window, true);
 }
 
-
-/* void */
-/* hide(void) */
-/* { */
-/*	if (current_window == NULL) */
-/*		return; */
-
-/*	long data[] = { */
-/*		XCB_ICCCM_WM_STATE_ICONIC, */
-/*		ewmh->_NET_WM_STATE_HIDDEN, */
-/*		XCB_NONE */
-/*	}; */
-
-/*	/\* Unmap window and declare iconic. Unmapping will generate an */
-/*	 * Unmap_Notify event so we can forget about the window later. *\/ */
-/*	current_window->iconic = true; */
-
-/*	xcb_unmap_window(conn, current_window->id); */
-/*	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, current_window->id, */
-/*			    ewmh->_NET_WM_STATE, ewmh->_NET_WM_STATE, 32, 3, data); */
-
-/*	xcb_flush(conn); */
-/* } */
-
-
 bool
 get_window_geometry(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t *width,
 	     uint16_t *height, uint8_t *depth)
@@ -1242,7 +1238,17 @@ teleport_window(const Arg *arg)
 }
 
 void
-delete_window()
+kill_window(const Arg *arg)
+{
+	xcb_kill_client(conn, current_window->id);
+
+	forget_window_id(current_window->id);
+
+	update_window_list();
+}
+
+void
+delete_window(const Arg *arg)
 {
 	bool use_delete = false;
 	xcb_icccm_get_wm_protocols_reply_t protocols;

@@ -1,3 +1,24 @@
+/* Copyright (c) 2017-2020 Ian Park
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef SANEWM_CONFIG_H
 #define SANEWM_CONFIG_H
 
@@ -104,151 +125,118 @@ static void toggle_sloppy(const Arg *arg)
  *      DESKTOP_CHANGE(     XK_ccedilla,                      8)
  *      DESKTOP_CHANGE(     XK_agrave,                        9)*
  */
-#define DESKTOP_CHANGE(K,N)						\
-	{  MOD ,             K,              change_workspace, {.i = N}}, \
-	{  MOD | SHIFT,      K,              send_to_workspace, {.i = N}},
-	static key keys[] = {
-		/* modifier           key            function           argument */
-		// Focus to next/previous window
-		{  MOD ,               XK_Tab,        focus_next_window,         {.i = SANEWM_FOCUS_NEXT}},
-		{  MOD | SHIFT,        XK_Tab,        focus_next_window,         {.i = SANEWM_FOCUS_PREVIOUS}},
-		// Kill a window
-		{  MOD ,               XK_c,          delete_window,         {}},
-		// Resize a window
-		{  MOD | SHIFT,        XK_k,          resize_step_window,        {.i = SANEWM_RESIZE_UP}},
-		{  MOD | SHIFT,        XK_j,          resize_step_window,        {.i = SANEWM_RESIZE_DOWN}},
-		{  MOD | SHIFT,        XK_l,          resize_step_window,        {.i = SANEWM_RESIZE_RIGHT}},
-		{  MOD | SHIFT,        XK_h,          resize_step_window,        {.i = SANEWM_RESIZE_LEFT}},
-		// Resize a window slower
-		{  MOD | SHIFT | CONTROL, XK_k,          resize_step_window,        {.i = SANEWM_RESIZE_UP_SLOW}},
-		{  MOD | SHIFT | CONTROL, XK_j,          resize_step_window,        {.i = SANEWM_RESIZE_DOWN_SLOW}},
-		{  MOD | SHIFT | CONTROL, XK_l,          resize_step_window,        {.i = SANEWM_RESIZE_RIGHT_SLOW}},
-		{  MOD | SHIFT | CONTROL, XK_h,          resize_step_window,        {.i = SANEWM_RESIZE_LEFT_SLOW}},
-		// Move a window
-		{  MOD ,              XK_k,          move_step_window,          {.i = SANEWM_MOVE_UP}},
-		{  MOD ,              XK_j,          move_step_window,          {.i = SANEWM_MOVE_DOWN}},
-		{  MOD ,              XK_l,          move_step_window,          {.i = SANEWM_MOVE_RIGHT}},
-		{  MOD ,              XK_h,          move_step_window,          {.i = SANEWM_MOVE_LEFT}},
-		// Move a window slower
-		{  MOD | CONTROL,      XK_k,          move_step_window,          {.i = SANEWM_MOVE_UP_SLOW}},
-		{  MOD | CONTROL,      XK_j,          move_step_window,          {.i = SANEWM_MOVE_DOWN_SLOW}},
-		{  MOD | CONTROL,      XK_l,          move_step_window,          {.i = SANEWM_MOVE_RIGHT_SLOW}},
-		{  MOD | CONTROL,      XK_h,          move_step_window,          {.i = SANEWM_MOVE_LEFT_SLOW}},
-		// Teleport the window to an area of the screen.
-		// Center:
-		/* {  MOD ,              XK_g,          teleport_window,          {.i = SANEWM_TELEPORT_CENTER}}, */
-		// Center y:
-		{  MOD | SHIFT,        XK_g,          teleport_window,          {.i = SANEWM_TELEPORT_CENTER_Y}},
-		// Center x:
-		{  MOD | CONTROL,      XK_g,          teleport_window,          {.i = SANEWM_TELEPORT_CENTER_X}},
+#define DESKTOP_CHANGE(K,N)						     \
+	{  MOD ,             K,			change_workspace, {.i = N}}, \
+	{  MOD | SHIFT,      K,			send_to_workspace, {.i = N}},
 
-		/* // Top left: */
-		/* {  MOD,              XK_y,          teleport_window,          {.i = SANEWM_TELEPORT_TOP_LEFT}}, */
-		/* // Top right: */
-		/* {  MOD,              XK_o,          teleport_window,          {.i = SANEWM_TELEPORT_TOP_RIGHT}}, */
-		/* // Bottom left: */
-		/* {  MOD,              XK_u,          teleport_window,          {.i = SANEWM_TELEPORT_BOTTOM_LEFT}}, */
-		/* // Bottom right: */
-		/* {  MOD,              XK_i,          teleport_window,          {.i = SANEWM_TELEPORT_BOTTOM_RIGHT}}, */
+static key keys[] = {
+	/* modifier           key            function           argument */
+	// Focus to next/previous window
+	{  MOD ,               XK_Tab,        focus_next_window,           {.i = SANEWM_FOCUS_NEXT}},
+	{  MOD | SHIFT,        XK_Tab,        focus_next_window,           {.i = SANEWM_FOCUS_PREVIOUS}},
+	// Kill a window
+	{  MOD ,               XK_c,          delete_window,               {}},
+	{  MOD | SHIFT,        XK_c,          kill_window,                 {}},
+	// Resize a window
+	{  MOD | SHIFT,        XK_k,          resize_step_window,          {.i = SANEWM_RESIZE_UP}},
+	{  MOD | SHIFT,        XK_j,          resize_step_window,          {.i = SANEWM_RESIZE_DOWN}},
+	{  MOD | SHIFT,        XK_l,          resize_step_window,          {.i = SANEWM_RESIZE_RIGHT}},
+	{  MOD | SHIFT,        XK_h,          resize_step_window,          {.i = SANEWM_RESIZE_LEFT}},
+	// Resize a window slower
+	{  MOD | SHIFT | CONTROL, XK_k,          resize_step_window,       {.i = SANEWM_RESIZE_UP_SLOW}},
+	{  MOD | SHIFT | CONTROL, XK_j,          resize_step_window,       {.i = SANEWM_RESIZE_DOWN_SLOW}},
+	{  MOD | SHIFT | CONTROL, XK_l,          resize_step_window,       {.i = SANEWM_RESIZE_RIGHT_SLOW}},
+	{  MOD | SHIFT | CONTROL, XK_h,          resize_step_window,       {.i = SANEWM_RESIZE_LEFT_SLOW}},
+	// Move a window
+	{  MOD ,              XK_k,          move_step_window,             {.i = SANEWM_MOVE_UP}},
+	{  MOD ,              XK_j,          move_step_window,             {.i = SANEWM_MOVE_DOWN}},
+	{  MOD ,              XK_l,          move_step_window,             {.i = SANEWM_MOVE_RIGHT}},
+	{  MOD ,              XK_h,          move_step_window,             {.i = SANEWM_MOVE_LEFT}},
+	// Move a window slower
+	{  MOD | CONTROL,      XK_k,          move_step_window,            {.i = SANEWM_MOVE_UP_SLOW}},
+	{  MOD | CONTROL,      XK_j,          move_step_window,            {.i = SANEWM_MOVE_DOWN_SLOW}},
+	{  MOD | CONTROL,      XK_l,          move_step_window,            {.i = SANEWM_MOVE_RIGHT_SLOW}},
+	{  MOD | CONTROL,      XK_h,          move_step_window,            {.i = SANEWM_MOVE_LEFT_SLOW}},
+	// Teleport the window to an area of the screen.
+	{  MOD | SHIFT,        XK_g,          teleport_window,             {.i = SANEWM_TELEPORT_CENTER_Y}},
+	// Center x:
+	{  MOD | CONTROL,      XK_g,          teleport_window,             {.i = SANEWM_TELEPORT_CENTER_X}},
+	// Top left:
+	{  MOD,              XK_y,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_TOP_LEFT}},
+	// Top right:
+	{  MOD,              XK_o,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_TOP_RIGHT}},
+	// Bottom left:
+	{  MOD,              XK_u,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_BOTTOM_LEFT}},
+	// Bottom right:
+	{  MOD,              XK_i,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_BOTTOM_RIGHT}},
+	// Center
+	{  MOD,              XK_g,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_CENTER}},
+	// Resize while keeping the window aspect
+	{  MOD,              XK_Home,       resize_step_aspect_window,     {.i = SANEWM_RESIZE_KEEP_ASPECT_GROW}},
+	{  MOD,              XK_End,        resize_step_aspect_window,     {.i = SANEWM_RESIZE_KEEP_ASPECT_SHRINK}},
+	// Maximize (ignore offset and no EWMH atom)
+	{  MOD,              XK_a,          maximize_current_window,       {}},
+	// Full screen (disregarding offsets and adding EWMH atom)
+	{  MOD,              XK_f,          fullscreen_window,             {}},
+	// vertically left
+	{  MOD | SHIFT,        XK_y,          max_half_window,             {.i = SANEWM_MAX_HALF_VERTICAL_LEFT}},
+	// vertically right
+	{  MOD | SHIFT,        XK_o,          max_half_window,             {.i = SANEWM_MAX_HALF_VERTICAL_RIGHT}},
+	// horizontally left
+	{  MOD | SHIFT,        XK_u,          max_half_window,             {.i = SANEWM_MAX_HALF_HORIZONTAL_BOTTOM}},
+	// horizontally right
+	{  MOD | SHIFT,        XK_i,          max_half_window,             {.i = SANEWM_MAX_HALF_HORIZONTAL_TOP}},
+	// Next/Previous screen
+	{  MOD,                XK_m,      change_monitor,                  {.i = SANEWM_NEXT_SCREEN}},
+	{  MOD | SHIFT,        XK_m,      send_to_monitor,                 {.i = SANEWM_NEXT_SCREEN}},
+	// Next/Previous workspace
+	{  MOD,              XK_bracketright,          next_workspace,     {}},
+	{  MOD,              XK_bracketleft,           previous_workspace, {}},
+	// Move to Next/Previous workspace
+	{  MOD | SHIFT,       XK_bracketright,          send_to_next_workspace,    {}},
+	{  MOD | SHIFT,       XK_bracketleft,           send_to_previous_workspace,{}},
+	// Make the window unkillable
+	{  MOD | SHIFT,        XK_t,          unkillable_current_window, {.i = 0}},
+	// Make the window appear always on top
+	{  MOD,                XK_t,          always_on_top_window,      {.i = 0}},
+	// Make the window stay on all workspaces
+	{  MOD | SHIFT,        XK_f,          fix_current_window,        {.i = 0}},
+	// Move the cursor
+	{  MOD,                XK_Up,         cursor_move,       {.i = SANEWM_CURSOR_UP_SLOW}},
+	{  MOD,                XK_Down,       cursor_move,       {.i = SANEWM_CURSOR_DOWN_SLOW}},
+	{  MOD,                XK_Right,      cursor_move,       {.i = SANEWM_CURSOR_RIGHT_SLOW}},
+	{  MOD,                XK_Left,       cursor_move,       {.i = SANEWM_CURSOR_LEFT_SLOW}},
+	// Move the cursor faster
+	{  MOD | SHIFT,        XK_Up,         cursor_move,       {.i = SANEWM_CURSOR_UP}},
+	{  MOD | SHIFT,        XK_Down,       cursor_move,       {.i = SANEWM_CURSOR_DOWN}},
+	{  MOD | SHIFT,        XK_Right,      cursor_move,       {.i = SANEWM_CURSOR_RIGHT}},
+	{  MOD | SHIFT,        XK_Left,       cursor_move,       {.i = SANEWM_CURSOR_LEFT}},
+	// Exit or restart sanewm
+	{  MOD | SHIFT,        XK_q,          sanewm_exit,       {.i = 0}},
+	{  MOD | CONTROL,      XK_r,          sanewm_restart,    {.i = 0}},
+	{  MOD ,               XK_space,      half_and_centered, {.i = 0}},
+	{  MOD | SHIFT,        XK_space,      toggle_sloppy,     {.com = sloppy_switch_cmd}},
+	// Change current workspace
+	DESKTOP_CHANGE(     XK_1,                             0)
+	DESKTOP_CHANGE(     XK_2,                             1)
+	DESKTOP_CHANGE(     XK_3,                             2)
+	DESKTOP_CHANGE(     XK_4,                             3)
+	DESKTOP_CHANGE(     XK_5,                             4)
+	DESKTOP_CHANGE(     XK_6,                             5)
+	DESKTOP_CHANGE(     XK_7,                             6)
+	DESKTOP_CHANGE(     XK_8,                             7)
+	DESKTOP_CHANGE(     XK_9,                             8)
+	DESKTOP_CHANGE(     XK_0,                             9)
+};
 
-		// Top left:
-		{  MOD,              XK_y,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_TOP_LEFT}},
-		// Top right:
-		{  MOD,              XK_o,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_TOP_RIGHT}},
-		// Bottom left:
-		{  MOD,              XK_u,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_BOTTOM_LEFT}},
-		// Bottom right:
-		{  MOD,              XK_i,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_BOTTOM_RIGHT}},
-		// Center
-		{  MOD,              XK_g,          max_half_half_window,          {.i = SANEWM_MAX_HALF_HALF_CENTER}},
-
-		// Resize while keeping the window aspect
-		{  MOD,              XK_Home,       resize_step_aspect_window, {.i = SANEWM_RESIZE_KEEP_ASPECT_GROW}},
-		{  MOD,              XK_End,        resize_step_aspect_window, {.i = SANEWM_RESIZE_KEEP_ASPECT_SHRINK}},
-		// Maximize (ignore offset and no EWMH atom)
-		{  MOD,              XK_a,          maximize_current_window,          {}},
-		// Full screen (disregarding offsets and adding EWMH atom)
-		{  MOD,              XK_f,          fullscreen_window,        {}},
-		// Maximize vertically
-		/* {  MOD ,              XK_m,          maxvert_hor,       {.i = SANEWM_MAXIMIZE_VERTICALLY}}, */
-		// Maximize horizontally
-		/* {  MOD | SHIFT,        XK_m,          maxvert_hor,       {.i = SANEWM_MAXIMIZE_HORIZONTALLY}}, */
-		// Maximize and move
-		// vertically left
-		{  MOD | SHIFT,        XK_y,          max_half_window,           {.i = SANEWM_MAX_HALF_VERTICAL_LEFT}},
-		// vertically right
-		{  MOD | SHIFT,        XK_o,          max_half_window,           {.i = SANEWM_MAX_HALF_VERTICAL_RIGHT}},
-		// horizontally left
-		{  MOD | SHIFT,        XK_u,          max_half_window,           {.i = SANEWM_MAX_HALF_HORIZONTAL_BOTTOM}},
-		// horizontally right
-		{  MOD | SHIFT,        XK_i,          max_half_window,           {.i = SANEWM_MAX_HALF_HORIZONTAL_TOP}},
-
-		/* //fold half vertically */
-		/* {  MOD | SHIFT | CONTROL,XK_y,          max_half_window,           {.i = SANEWM_MAX_HALF_FOLD_VERTICAL}}, */
-		/* //fold half horizontally */
-		/* {  MOD | SHIFT | CONTROL,XK_b,          max_half_window,           {.i = SANEWM_MAX_HALF_FOLD_HORIZONTAL}}, */
-		/* //unfold vertically */
-		/* {  MOD | SHIFT | CONTROL,XK_u,          max_half_window,           {.i = SANEWM_MAX_HALF_UNFOLD_VERTICAL}}, */
-		/* //unfold horizontally */
-		/* {  MOD | SHIFT | CONTROL,XK_n,          max_half_window,           {.i = SANEWM_MAX_HALF_UNFOLD_HORIZONTAL}}, */
-		// Next/Previous screen
-		{  MOD,                XK_m,      change_monitor,         {.i = SANEWM_NEXT_SCREEN}},
-		{  MOD | SHIFT,        XK_m,      send_to_monitor,           {.i = SANEWM_NEXT_SCREEN}},
-		// Raise or lower a window
-		/* {  MOD ,              XK_r,          raiseorlower,      {}}, */
-		// Next/Previous workspace
-		{  MOD,              XK_bracketright,          next_workspace,     {}},
-		{  MOD,              XK_bracketleft,           previous_workspace,     {}},
-		// Move to Next/Previous workspace
-		{  MOD | SHIFT,       XK_bracketright,          send_to_next_workspace,{}},
-		{  MOD | SHIFT,       XK_bracketleft,           send_to_previous_workspace,{}},
-		// Iconify the window
-		/* {  MOD | SHIFT,        XK_r,          hide,              {}}, */
-		// Make the window unkillable
-		{  MOD | SHIFT,        XK_t,          unkillable_current_window, {.i = 0}},
-		// Make the window appear always on top
-		{  MOD,                XK_t,          always_on_top_window,      {.i = 0}},
-		// Make the window stay on all workspaces
-		{  MOD | SHIFT,        XK_f,          fix_current_window,        {.i = 0}},
-		// Move the cursor
-		{  MOD,                XK_Up,         cursor_move,       {.i = SANEWM_CURSOR_UP_SLOW}},
-		{  MOD,                XK_Down,       cursor_move,       {.i = SANEWM_CURSOR_DOWN_SLOW}},
-		{  MOD,                XK_Right,      cursor_move,       {.i = SANEWM_CURSOR_RIGHT_SLOW}},
-		{  MOD,                XK_Left,       cursor_move,       {.i = SANEWM_CURSOR_LEFT_SLOW}},
-		// Move the cursor faster
-		{  MOD | SHIFT,        XK_Up,         cursor_move,       {.i = SANEWM_CURSOR_UP}},
-		{  MOD | SHIFT,        XK_Down,       cursor_move,       {.i = SANEWM_CURSOR_DOWN}},
-		{  MOD | SHIFT,        XK_Right,      cursor_move,       {.i = SANEWM_CURSOR_RIGHT}},
-		{  MOD | SHIFT,        XK_Left,       cursor_move,       {.i = SANEWM_CURSOR_LEFT}},
-		// Start programs
-		/* {  MOD ,              XK_w,          start,             {.com = menucmd}}, */
-		// Exit or restart sanewm
-		{  MOD | SHIFT,        XK_q,          sanewm_exit,       {.i = 0}},
-		{  MOD | CONTROL,      XK_r,          sanewm_restart,    {.i = 0}},
-		{  MOD ,               XK_space,      half_and_centered, {.i = 0}},
-		{  MOD | SHIFT,        XK_space,      toggle_sloppy,     {.com = sloppy_switch_cmd}},
-		// Change current workspace
-		DESKTOP_CHANGE(     XK_1,                             0)
-		DESKTOP_CHANGE(     XK_2,                             1)
-		DESKTOP_CHANGE(     XK_3,                             2)
-		DESKTOP_CHANGE(     XK_4,                             3)
-		DESKTOP_CHANGE(     XK_5,                             4)
-		DESKTOP_CHANGE(     XK_6,                             5)
-		DESKTOP_CHANGE(     XK_7,                             6)
-		DESKTOP_CHANGE(     XK_8,                             7)
-		DESKTOP_CHANGE(     XK_9,                             8)
-		DESKTOP_CHANGE(     XK_0,                             9)
-	};
 // the last argument makes it a root window only event
 static Button buttons[] = {
-	{  MOD        ,XCB_BUTTON_INDEX_1,     mouse_motion,     {.i = SANEWM_MOVE}, false},
-	{  MOD        ,XCB_BUTTON_INDEX_3,     mouse_motion,     {.i = SANEWM_RESIZE}, false},
-	{  0          ,XCB_BUTTON_INDEX_3,     start,            {.com = menu_cmd}, true},
-	{  MOD | SHIFT,  XCB_BUTTON_INDEX_1,     change_workspace, {.i = 0}, false},
-	{  MOD | SHIFT,  XCB_BUTTON_INDEX_3,     change_workspace, {.i = 1}, false},
-	{  MOD | ALT,    XCB_BUTTON_INDEX_1,     send_to_monitor,    {.i = 1}, false},
-	{  MOD | ALT,    XCB_BUTTON_INDEX_3,     send_to_monitor,    {.i = 0}, false}
-
+	{  MOD        , XCB_BUTTON_INDEX_1, mouse_motion,     {.i = SANEWM_MOVE}, false},
+	{  MOD        , XCB_BUTTON_INDEX_3, mouse_motion,     {.i = SANEWM_RESIZE}, false},
+	{  MOD | SHIFT, XCB_BUTTON_INDEX_1, change_workspace, {.i = 0}, false},
+	{  MOD | SHIFT, XCB_BUTTON_INDEX_3, change_workspace, {.i = 1}, false},
+	{  MOD | ALT  , XCB_BUTTON_INDEX_1, send_to_monitor,  {.i = 1}, false},
+	{  MOD | ALT  , XCB_BUTTON_INDEX_3, send_to_monitor,  {.i = 0}, false}
 };
 
 #endif
