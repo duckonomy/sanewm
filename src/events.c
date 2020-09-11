@@ -96,7 +96,7 @@ enter_notify(xcb_generic_event_t *ev)
 		}
 
 		focus_window(window);
-		set_borders(window, true);
+		set_window_borders(window, true);
 	}
 }
 
@@ -204,7 +204,7 @@ map_request(xcb_generic_event_t *ev)
 			window->monitor = monitor_list->data;
 	}
 
-	fit_on_screen(window);
+	fit_window_on_screen(window);
 
 	/* Show window on screen. */
 	xcb_map_window(conn, window->id);
@@ -215,7 +215,7 @@ map_request(xcb_generic_event_t *ev)
 	update_window_list();
 
 	if (!window->maxed)
-		set_borders(window, true);
+		set_window_borders(window, true);
 	// always focus new window
 	focus_window(window);
 }
@@ -238,7 +238,7 @@ void
 handle_keypress(xcb_generic_event_t *e)
 {
 	xcb_key_press_event_t *ev       = (xcb_key_press_event_t *)e;
-	xcb_keysym_t           keysym   = xcb_get_keysym(ev->detail);
+	xcb_keysym_t           keysym   = keycode_to_keysym(ev->detail);
 
 	for (unsigned int i = 0; i < LENGTH(keys); ++i) {
 		if (keysym == keys[i].keysym && CLEAN_MASK(keys[i].mod)
@@ -346,12 +346,12 @@ configure_request(xcb_generic_event_t *ev)
 
 		/* Check if window fits on screen after resizing. */
 		if (!window->maxed) {
-			resize_limit(window);
-			move_limit(window);
-			fit_on_screen(window);
+			resize_window_limit(window);
+			move_window_limit(window);
+			fit_window_on_screen(window);
 		}
 
-		set_borders(window, true);
+		set_window_borders(window, true);
 	} else {
 		/* Unmapped window, pass all options except border width. */
 		wc.x = e->x;
@@ -454,7 +454,7 @@ mouse_motion(const Arg *arg)
 				mouse_resize(current_window, winw + ev->root_x - mx,
 					     winh + ev->root_y - my);
 
-				set_borders(current_window, true);
+				set_window_borders(current_window, true);
 			}
 
 			ungrab = true;
@@ -491,7 +491,7 @@ button_press(xcb_generic_event_t *ev)
 		if (NULL != window) {
 			focus_window(window);
 			raise_window(window->id);
-			set_borders(window, true);
+			set_window_borders(window, true);
 		}
 		return;
 	}

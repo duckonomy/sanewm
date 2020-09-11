@@ -6,9 +6,9 @@
 #include "pointer.h"
 
 void
-delete_monitor(struct monitor *mon)
+delete_monitor(struct monitor *monitor)
 {
-	free_item(&monitor_list, NULL, mon->item);
+	free_item(&monitor_list, NULL, monitor->item);
 }
 
 /* get screen of display */
@@ -95,13 +95,13 @@ get_randr(void)
 		xcb_randr_get_screen_resources_current_outputs(res);
 
 	/* Request information for all outputs. */
-	get_outputs(outputs, len, timestamp);
+	get_randr_outputs(outputs, len, timestamp);
 	free(res);
 }
 
 /* Walk through all the RANDR outputs (number of outputs == len) there */
 void
-get_outputs(xcb_randr_output_t *outputs, const int len,
+get_randr_outputs(xcb_randr_output_t *outputs, const int len,
 	    xcb_timestamp_t timestamp)
 {
 	int i;
@@ -142,7 +142,7 @@ get_outputs(xcb_randr_output_t *outputs, const int len,
 			/* Check if it's a clone. */
 			// TODO maybe they are not cloned, one might be bigger
 			// than the other after closing the lid
-			clone_monitor = find_clones(outputs[i], crtc->x, crtc->y);
+			clone_monitor = find_clone_monitors(outputs[i], crtc->x, crtc->y);
 
 			if (NULL != clone_monitor)
 				continue;
@@ -189,7 +189,7 @@ get_outputs(xcb_randr_output_t *outputs, const int len,
 								window->monitor = monitor_list->data;
 						else
 							window->monitor = window->monitor->item->next->data;
-						fit_on_screen(window);
+						fit_window_on_screen(window);
 					}
 				}
 
@@ -214,28 +214,28 @@ arrange_by_monitor(struct monitor *monitor)
 		window = item->data;
 
 		if (window->monitor == monitor)
-			fit_on_screen(window);
+			fit_window_on_screen(window);
 	}
 }
 
 struct monitor *
 find_monitor(xcb_randr_output_t id)
 {
-	struct monitor *mon;
+	struct monitor *monitor;
 	struct list_item *item;
 
 	for (item = monitor_list; item != NULL; item = item->next) {
-		mon = item->data;
+		monitor = item->data;
 
-		if (id == mon->id)
-			return mon;
+		if (id == monitor->id)
+			return monitor;
 	}
 
 	return NULL;
 }
 
 struct monitor *
-find_clones(xcb_randr_output_t id, const int16_t x, const int16_t y)
+find_clone_monitors(xcb_randr_output_t id, const int16_t x, const int16_t y)
 {
 	struct monitor *clone_monitor;
 	struct list_item *item;
@@ -254,15 +254,15 @@ find_clones(xcb_randr_output_t id, const int16_t x, const int16_t y)
 struct monitor *
 find_monitor_by_coordinate(const int16_t x, const int16_t y)
 {
-	struct monitor *mon;
+	struct monitor *monitor;
 	struct list_item *item;
 
 	for (item = monitor_list; item != NULL; item = item->next) {
-		mon = item->data;
+		monitor = item->data;
 
-		if (x >= mon->x && x <= mon->x + mon->width && y >= mon->y && y
-		    <= mon->y+mon->height)
-			return mon;
+		if (x >= monitor->x && x <= monitor->x + monitor->width && y >= monitor->y && y
+		    <= monitor->y+monitor->height)
+			return monitor;
 	}
 
 	return NULL;
@@ -273,29 +273,29 @@ add_monitor(xcb_randr_output_t id, const int16_t x, const int16_t y,
 	    const uint16_t width, const uint16_t height)
 {
 	struct list_item *item;
-	struct monitor *mon = malloc(sizeof(struct monitor));
+	struct monitor *monitor = malloc(sizeof(struct monitor));
 
 	if (NULL == (item = add_item(&monitor_list)))
 		return NULL;
 
-	if (NULL == mon)
+	if (NULL == monitor)
 		return NULL;
 
-	item->data  = mon;
-	mon->id     = id;
-	mon->item   = item;
-	mon->x      = x;
-	mon->y      = y;
-	mon->width  = width;
-	mon->height = height;
+	item->data	= monitor;
+	monitor->id     = id;
+	monitor->item   = item;
+	monitor->x      = x;
+	monitor->y      = y;
+	monitor->width  = width;
+	monitor->height = height;
 
-	return mon;
+	return monitor;
 }
 
 /* Actually need a underlying window (fake) for detecting focus with mouse change... */
 /* Causes some random death when hibernating */
 void
-switch_screen(const Arg *arg)
+change_monitor(const Arg *arg)
 {
 	int16_t cur_x;
 	int16_t cur_y;
@@ -352,7 +352,7 @@ switch_screen(const Arg *arg)
 }
 
 void
-change_screen(const Arg *arg)
+send_to_monitor(const Arg *arg)
 {
 	struct list_item *item, *head, *tail;
 	float x_percentage, y_percentage;
@@ -411,8 +411,8 @@ change_screen(const Arg *arg)
 	focused_monitor = current_window->monitor;
 
 	raise_current_window();
-	fit_on_screen(current_window);
-	move_limit(current_window);
-	set_borders(current_window, true);
+	fit_window_on_screen(current_window);
+	move_window_limit(current_window);
+	set_window_borders(current_window, true);
 	center_pointer(current_window->id, current_window);
 }

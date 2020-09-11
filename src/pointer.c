@@ -78,7 +78,7 @@ mouse_resize(struct sane_window *window, const int16_t rel_x, const int16_t rel_
 			% window->height_increment;
 	}
 
-	resize_limit(window);
+	resize_window_limit(window);
 	window->vertical_maxed = false;
 	window->horizontal_maxed  = false;
 }
@@ -97,7 +97,7 @@ mouse_move(const int16_t rel_x, const int16_t rel_y)
 	if (borders[2] > 0)
 		snap_window(current_window);
 
-	move_limit(current_window);
+	move_window_limit(current_window);
 }
 
 

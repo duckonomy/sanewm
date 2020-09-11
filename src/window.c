@@ -8,13 +8,13 @@
 #include "desktop.h"
 
 void
-fix()
+fix_current_window()
 {
 	fix_window(current_window);
 }
 
 void
-unkillable()
+unkillable_current_window()
 {
 	unkillable_window(current_window);
 }
@@ -35,7 +35,7 @@ add_to_window_list(const xcb_drawable_t id)
 }
 
 void
-focus_next_helper(bool arg)
+focus_next_window_helper(bool arg)
 {
 	struct sane_window *window = NULL;
 	struct list_item *head = workspace_list[current_workspace];
@@ -89,9 +89,9 @@ focus_next_helper(bool arg)
 
 
 void
-focus_next(const Arg *arg)
+focus_next_window(const Arg *arg)
 {
-	focus_next_helper(arg->i > 0);
+	focus_next_window_helper(arg->i > 0);
 }
 
 /* Rearrange windows to fit new screen size. */
@@ -105,14 +105,14 @@ arrange_windows(void)
 
 	for (item = window_list; item != NULL; item = item->next) {
 		window = item->data;
-		fit_on_screen(window);
+		fit_window_on_screen(window);
 	}
 }
 
 
 /* check if the window is unkillable, if yes return true */
 bool
-get_unkill_state(xcb_drawable_t win)
+check_window_state_unkill(xcb_drawable_t win)
 {
 	xcb_get_property_cookie_t cookie;
 	xcb_get_property_reply_t *reply;
@@ -141,7 +141,7 @@ get_unkill_state(xcb_drawable_t win)
 }
 
 void
-always_on_top()
+always_on_top_window()
 {
 	struct sane_window *window = NULL;
 
@@ -153,13 +153,13 @@ always_on_top()
 
 		top_win = current_window->id;
 		if (NULL != window)
-			set_borders(window, false);
+			set_window_borders(window, false);
 
 		raise_window(top_win);
 	} else
 		top_win = 0;
 
-	set_borders(current_window, true);
+	set_window_borders(current_window, true);
 }
 
 /* Fix or unfix a window client from all workspaces. If setcolour is */
@@ -187,7 +187,7 @@ fix_window(struct sane_window *window)
 				    &ww);
 	}
 
-	set_borders(window, true);
+	set_window_borders(window, true);
 }
 
 /* Make unkillable or killable a window client. If setcolour is */
@@ -208,11 +208,11 @@ unkillable_window(struct sane_window *window)
 				    &window->unkillable);
 	}
 
-	set_borders(window, true);
+	set_window_borders(window, true);
 }
 
 void
-check_name(struct sane_window *window)
+check_window_name(struct sane_window *window)
 {
 	xcb_get_property_reply_t *reply ;
 	unsigned int reply_len;
@@ -322,7 +322,7 @@ setup_window(xcb_window_t win)
 	window->ws = -1;
 
 	/* Get window geometry. */
-	get_geometry(&window->id, &window->x, &window->y, &window->width,
+	get_window_geometry(&window->id, &window->x, &window->y, &window->width,
 		     &window->height, &window->depth);
 
 	/* Get the window's incremental size step, if any.*/
@@ -367,7 +367,7 @@ setup_window(xcb_window_t win)
 		}
 	}
 
-	check_name(window);
+	check_window_name(window);
 	return window;
 }
 
@@ -405,7 +405,7 @@ raise_or_lower(void)
 
 /* Keep the window inside the screen */
 void
-move_limit(struct sane_window *window)
+move_window_limit(struct sane_window *window)
 {
 	int16_t monitor_y, monitor_x, temp = 0;
 	uint16_t monitor_height, monitor_width;
@@ -413,26 +413,26 @@ move_limit(struct sane_window *window)
 	get_monitor_size(1, &monitor_x, &monitor_y,
 			 &monitor_width, &monitor_height, window);
 
-	no_border(&temp, window, true);
+	no_window_border(&temp, window, true);
 
 	/* Is it outside the physical monitor or close to the side? */
 	if (window->y-conf.border_width < monitor_y ||
 	    window->y < borders[2] + monitor_y)
 		window->y = monitor_y;
-	else if (window->y + window->height + (conf.border_width * 2) > monitor_y
-		 + monitor_height - borders[2])
-		window->y = monitor_y + monitor_height - window->height
-			- conf.border_width * 2;
+	else if (window->y + window->height + (conf.border_width * 2) > monitor_y +
+		 monitor_height - borders[2])
+		window->y = monitor_y + monitor_height - window->height -
+			conf.border_width * 2;
 
 	if (window->x < borders[2] + monitor_x)
 		window->x = monitor_x;
 	else if (window->x + window->width + (conf.border_width * 2)
 		 > monitor_x + monitor_width - borders[2])
-		window->x = monitor_x + monitor_width - window->width
-			- conf.border_width * 2;
+		window->x = monitor_x + monitor_width - window->width -
+			conf.border_width * 2;
 
 	move_window(window->id, window->x, window->y);
-	no_border(&temp, window, false);
+	no_window_border(&temp, window, false);
 }
 
 void
@@ -450,13 +450,13 @@ move_window(xcb_drawable_t win, const int16_t x, const int16_t y)
 }
 
 /* Mark window win as unfocused. */
-void set_unfocus(void)
+void set_unfocus_window(void)
 {
 	//    xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_NONE,XCB_CURRENT_TIME);
 	if (NULL == current_window || current_window->id == screen->root)
 		return;
 
-	set_borders(current_window, false);
+	set_window_borders(current_window, false);
 }
 
 /* Find window with window->id win in global window list or NULL. */
@@ -505,7 +505,7 @@ focus_window(struct sane_window *window)
 		return;
 
 	if (NULL != current_window)
-		set_unfocus(); /* Unset last focus. */
+		set_unfocus_window(); /* Unset last focus. */
 
 	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id,
 			    ewmh->_NET_WM_STATE, ewmh->_NET_WM_STATE, 32, 2, data);
@@ -518,19 +518,19 @@ focus_window(struct sane_window *window)
 	current_window = window;
 
 	grab_buttons(window);
-	set_borders(window, true);
+	set_window_borders(window, true);
 }
 
 
 /* Resize with limit. */
 void
-resize_limit(struct sane_window *window)
+resize_window_limit(struct sane_window *window)
 {
 	int16_t monitor_x, monitor_y,temp=0;
 	uint16_t monitor_width, monitor_height;
 
 	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, window);
-	no_border(&temp, window, true);
+	no_window_border(&temp, window, true);
 
 	/* Is it smaller than it wants to  be? */
 	if (0 != window->min_height && window->height < window->min_height)
@@ -538,19 +538,19 @@ resize_limit(struct sane_window *window)
 	if (0 != window->min_width && window->width < window->min_width)
 		window->width = window->min_width;
 	if (window->x + window->width + conf.border_width > monitor_x + monitor_width)
-		window->width = monitor_width - ((window->x - monitor_x)
-						 + conf.border_width * 2);
+		window->width = monitor_width -
+			((window->x - monitor_x) + conf.border_width * 2);
 	if (window->y + window->height + conf.border_width > monitor_y + monitor_height)
-		window->height = monitor_height - ((window->y - monitor_y)
-						   + conf.border_width * 2);
+		window->height = monitor_height -
+			((window->y - monitor_y) + conf.border_width * 2);
 
-	resize(window->id, window->width, window->height);
-	no_border(&temp, window, false);
+	resize_window(window->id, window->width, window->height);
+	no_window_border(&temp, window, false);
 }
 
 
 void
-move_resize(xcb_drawable_t win, const uint16_t x, const uint16_t y,
+move_resize_window(xcb_drawable_t win, const uint16_t x, const uint16_t y,
 	    const uint16_t width, const uint16_t height)
 {
 	uint32_t values[4] = { x, y, width, height };
@@ -559,7 +559,8 @@ move_resize(xcb_drawable_t win, const uint16_t x, const uint16_t y,
 		return;
 
 	xcb_configure_window(conn, win, XCB_CONFIG_WINDOW_X
-			     | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH
+			     | XCB_CONFIG_WINDOW_Y
+			     | XCB_CONFIG_WINDOW_WIDTH
 			     | XCB_CONFIG_WINDOW_HEIGHT, values);
 
 	xcb_flush(conn);
@@ -567,7 +568,7 @@ move_resize(xcb_drawable_t win, const uint16_t x, const uint16_t y,
 
 /* Resize window win to width,height. */
 void
-resize(xcb_drawable_t win, const uint16_t width, const uint16_t height)
+resize_window(xcb_drawable_t win, const uint16_t width, const uint16_t height)
 {
 	uint32_t values[2] = { width , height };
 
@@ -582,15 +583,15 @@ resize(xcb_drawable_t win, const uint16_t width, const uint16_t height)
 
 /* Resize window window in direction. */
 void
-resize_step(const Arg *arg)
+resize_step_window(const Arg *arg)
 {
 	uint8_t stepx,stepy,cases = arg->i % 4;
 
 	if (NULL == current_window || current_window->maxed)
 		return;
 
-	arg->i < 4 ? (stepx = stepy = movements[1])
-		: (stepx = stepy = movements[0]);
+	arg->i < 4 ? (stepx = stepy = movements[1]) :
+		(stepx = stepy = movements[0]);
 
 	if (current_window->width_increment > 7 && current_window->height_increment > 7) {
 		/* we were given a resize hint by the window so use it */
@@ -612,30 +613,30 @@ resize_step(const Arg *arg)
 	if (current_window->horizontal_maxed)
 		current_window->horizontal_maxed  = false;
 
-	resize_limit(current_window);
+	resize_window_limit(current_window);
 	center_pointer(current_window->id, current_window);
 	raise_current_window();
-	set_borders(current_window, true);
+	set_window_borders(current_window, true);
 }
 
 /* Resize window and keep it's aspect ratio (exponentially grow),
  * and round the result (+0.5) */
 void
-resize_step_aspect(const Arg *arg)
+resize_step_aspect_window(const Arg *arg)
 {
 	if (NULL == current_window || current_window->maxed)
 		return;
 
 	if (arg->i == SANEWM_RESIZE_KEEP_ASPECT_SHRINK) {
-		current_window->width = (current_window->width / resize_keep_aspect_ratio)
-			+ 0.5;
-		current_window->height = (current_window->height / resize_keep_aspect_ratio)
-			+ 0.5;
+		current_window->width = (current_window->width /
+					 resize_keep_aspect_ratio) + 0.5;
+		current_window->height = (current_window->height /
+					  resize_keep_aspect_ratio) + 0.5;
 	} else {
-		current_window->height = (current_window->height * resize_keep_aspect_ratio)
-			+ 0.5;
-		current_window->width = (current_window->width * resize_keep_aspect_ratio)
-			+ 0.5;
+		current_window->height = (current_window->height *
+					  resize_keep_aspect_ratio) + 0.5;
+		current_window->width = (current_window->width *
+					 resize_keep_aspect_ratio) + 0.5;
 	}
 
 	if (current_window->vertical_maxed)
@@ -643,10 +644,10 @@ resize_step_aspect(const Arg *arg)
 	if (current_window->horizontal_maxed)
 		current_window->horizontal_maxed  = false;
 
-	resize_limit(current_window);
+	resize_window_limit(current_window);
 	center_pointer(current_window->id, current_window);
 	raise_current_window();
-	set_borders(current_window, true);
+	set_window_borders(current_window, true);
 }
 
 /* Try to snap to other windows and monitor border */
@@ -664,8 +665,8 @@ snap_window(struct sane_window *window)
 		win = item->data;
 
 		if (window != win) {
-			if (abs((win->x +win->width) - window->x
-				+ conf.border_width) < borders[2])
+			if (abs((win->x +win->width) - window->x +
+				conf.border_width) < borders[2])
 				if (window->y + window->height > win->y &&
 				    window->y < win->y +
 				    win->height)
@@ -683,13 +684,13 @@ snap_window(struct sane_window *window)
 				conf.border_width) < borders[2])
 				if (window->y + window->height > win->y &&
 				    window->y < win->y + win->height)
-					window->x = (win->x - window->width)
-						- (2 * conf.border_width);
+					window->x = (win->x - window->width) -
+						(2 * conf.border_width);
 
 			if (abs((window->y + window->height) -
 				win->y +
-				conf.border_width)
-			    < borders[2])
+				conf.border_width) <
+			    borders[2])
 				if (window->x +
 				    window->width >win->x &&
 				    window->x < win->x +
@@ -703,7 +704,7 @@ snap_window(struct sane_window *window)
 
 
 void
-move_step(const Arg *arg)
+move_step_window(const Arg *arg)
 {
 	int16_t start_x, start_y;
 	uint8_t step, cases=arg->i;
@@ -728,13 +729,13 @@ move_step(const Arg *arg)
 		current_window->x = current_window->x + step;
 
 	raise_current_window();
-	move_limit(current_window);
+	move_window_limit(current_window);
 	move_pointer_back(start_x,start_y,current_window);
 	xcb_flush(conn);
 }
 
 void
-set_borders(struct sane_window *window, const bool isitfocused)
+set_window_borders(struct sane_window *window, const bool isitfocused)
 {
 	uint32_t values[1];  /* this is the color maintainer */
 	uint16_t half = 0;
@@ -861,8 +862,8 @@ set_borders(struct sane_window *window, const bool isitfocused)
 				     &values[0]);
 
 	/* free the memory we allocated for the pixmap */
-	xcb_free_pixmap(conn,pmap);
-	xcb_free_gc(conn,gc);
+	xcb_free_pixmap(conn, pmap);
+	xcb_free_gc(conn, gc);
 	xcb_flush(conn);
 }
 
@@ -886,21 +887,21 @@ unmaximize_window_size(struct sane_window *window)
 	values[3] = window->height;
 
 	window->maxed = window->horizontal_maxed = 0;
-	move_resize(window->id, window->x, window->y,
+	move_resize_window(window->id, window->x, window->y,
 		    window->width, window->height);
 
 	center_pointer(window->id, window);
-	set_borders(window, true);
+	set_window_borders(window, true);
 }
 
 void
-maximize(const Arg *arg)
+maximize_current_window(const Arg *arg)
 {
 	maximize_window(current_window, 1);
 }
 
 void
-fullscreen(const Arg *arg)
+fullscreen_window(const Arg *arg)
 {
 	maximize_window(current_window, 0);
 }
@@ -910,7 +911,7 @@ void
 unmaximize_window(struct sane_window *window){
 	unmaximize_window_size(window);
 	window->maxed = false;
-	set_borders(window, true);
+	set_window_borders(window, true);
 	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id,
 			    ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 0, NULL);
 }
@@ -931,7 +932,7 @@ maximize_window(struct sane_window *window, uint8_t with_offsets){
 	}
 
 	get_monitor_size(with_offsets, &monitor_x, &monitor_y, &monitor_width, &monitor_height, window);
-	maximize_helper(window, monitor_x, monitor_y, monitor_width, monitor_height);
+	maximize_window_helper(window, monitor_x, monitor_y, monitor_width, monitor_height);
 	raise_current_window();
 	// TODO Get rid of ewmh fullscreen
 	/* if (!with_offsets) { */
@@ -942,7 +943,7 @@ maximize_window(struct sane_window *window, uint8_t with_offsets){
 }
 
 void
-maximize_vertical_horizontal(const Arg *arg)
+maximize_vertical_horizontal_window(const Arg *arg)
 {
 	uint32_t values[2];
 	int16_t monitor_y, monitor_x, temp = 0;
@@ -954,14 +955,14 @@ maximize_vertical_horizontal(const Arg *arg)
 	if (current_window->vertical_maxed || current_window->horizontal_maxed) {
 		unmaximize_window_size(current_window);
 		current_window->vertical_maxed = current_window->horizontal_maxed = false;
-		fit_on_screen(current_window);
-		set_borders(current_window, true);
+		fit_window_on_screen(current_window);
+		set_window_borders(current_window, true);
 		return;
 	}
 
 	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, current_window);
-	save_original_geometry(current_window);
-	no_border(&temp, current_window,true);
+	save_original_window_geometry(current_window);
+	no_window_border(&temp, current_window,true);
 
 	if (arg->i == SANEWM_MAXIMIZE_VERTICALLY) {
 		current_window->y = monitor_y;
@@ -989,14 +990,14 @@ maximize_vertical_horizontal(const Arg *arg)
 		current_window->horizontal_maxed = true;
 	}
 
-	no_border(&temp, current_window,false);
+	no_window_border(&temp, current_window,false);
 	raise_current_window();
 	center_pointer(current_window->id, current_window);
-	set_borders(current_window,true);
+	set_window_borders(current_window,true);
 }
 
 void
-max_half(const Arg *arg)
+max_half_window(const Arg *arg)
 {
 	uint32_t values[4];
 	int16_t monitor_x, monitor_y, temp=0;
@@ -1006,67 +1007,67 @@ max_half(const Arg *arg)
 		return;
 
 	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, current_window);
-	no_border(&temp, current_window, true);
+	no_window_border(&temp, current_window, true);
 
 	if (arg->i>4) {
 		if (arg->i>6) {
 			/* in folding mode */
 			if (arg->i == SANEWM_MAX_HALF_FOLD_VERTICAL)
-				current_window->height = current_window->height / 2
-					- (conf.border_width);
+				current_window->height = current_window->height / 2 -
+					(conf.border_width);
 			else
-				current_window->height = current_window->height * 2
-					+ (2*conf.border_width);
+				current_window->height = current_window->height * 2 +
+					(2*conf.border_width);
 		} else {
 			current_window->y      =  monitor_y;
 			current_window->height =  monitor_height - (conf.border_width * 2);
-			current_window->width  = ((float)(monitor_width) / 2)
-				- (conf.border_width * 2);
+			current_window->width  = ((float)(monitor_width) / 2) -
+				(conf.border_width * 2);
 
 			if (arg->i == SANEWM_MAX_HALF_VERTICAL_LEFT)
 				current_window->x = monitor_x;
 			else
-				current_window->x = monitor_x + monitor_width
-					- (current_window->width
-					   + conf.border_width * 2);
+				current_window->x = monitor_x + monitor_width -
+					(current_window->width +
+					 conf.border_width * 2);
 		}
 	} else {
 		if (arg->i < 2) {
 			/* in folding mode */
 			if (arg->i == SANEWM_MAX_HALF_FOLD_HORIZONTAL)
-				current_window->width = current_window->width / 2
-					- conf.border_width;
+				current_window->width = current_window->width / 2 -
+					conf.border_width;
 			else
-				current_window->width = current_window->width * 2
-					+ (2 * conf.border_width); //unfold
+				current_window->width = current_window->width * 2 +
+					(2 * conf.border_width); //unfold
 		} else {
 			current_window->x     =  monitor_x;
 			current_window->width =  monitor_width - (conf.border_width * 2);
-			current_window->height = ((float)(monitor_height) / 2)
-				- (conf.border_width * 2);
+			current_window->height = ((float)(monitor_height) / 2) -
+				(conf.border_width * 2);
 
 			if (arg->i == SANEWM_MAX_HALF_HORIZONTAL_TOP)
 				current_window->y = monitor_y;
 			else
-				current_window->y = monitor_y + monitor_height
-					- (current_window->height
-					   + conf.border_width * 2);
+				current_window->y = monitor_y + monitor_height -
+					(current_window->height +
+					 conf.border_width * 2);
 		}
 	}
 
-	move_resize(current_window->id, current_window->x, current_window->y,
+	move_resize_window(current_window->id, current_window->x, current_window->y,
 		    current_window->width, current_window->height);
 
 	current_window->vertical_horizontal = true;
-	no_border(&temp, current_window, false);
+	no_window_border(&temp, current_window, false);
 	raise_current_window();
-	fit_on_screen(current_window);
+	fit_window_on_screen(current_window);
 	center_pointer(current_window->id, current_window);
-	set_borders(current_window, true);
+	set_window_borders(current_window, true);
 }
 
 void
-max_half_half(const Arg *arg)
+max_half_half_window(const Arg *arg)
 {
 	uint32_t values[4];
 	int16_t monitor_x, monitor_y, temp=0;
@@ -1076,7 +1077,7 @@ max_half_half(const Arg *arg)
 		return;
 
 	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, current_window);
-	no_border(&temp, current_window, true);
+	no_window_border(&temp, current_window, true);
 
 	current_window->x =  monitor_x;
 	current_window->y =  monitor_y;
@@ -1087,38 +1088,38 @@ max_half_half(const Arg *arg)
 		- (conf.border_width * 2);
 
 	if (arg->i == SANEWM_MAX_HALF_HALF_BOTTOM_LEFT)
-		current_window->y = monitor_y + monitor_height
-			- (current_window->height
-			   + conf.border_width * 2);
+		current_window->y = monitor_y + monitor_height -
+			(current_window->height +
+			 conf.border_width * 2);
 	else if (arg->i == SANEWM_MAX_HALF_HALF_TOP_RIGHT)
-		current_window->x = monitor_x + monitor_width
-			- (current_window->width
-			   + conf.border_width * 2);
+		current_window->x = monitor_x + monitor_width -
+			(current_window->width +
+			 conf.border_width * 2);
 	else if (arg->i == SANEWM_MAX_HALF_HALF_BOTTOM_RIGHT) {
-		current_window->x = monitor_x + monitor_width
-			- (current_window->width
-			   + conf.border_width * 2);
-		current_window->y = monitor_y + monitor_height
-			- (current_window->height
-			   + conf.border_width * 2);
+		current_window->x = monitor_x + monitor_width -
+			(current_window->width +
+			 conf.border_width * 2);
+		current_window->y = monitor_y + monitor_height -
+			(current_window->height +
+			 conf.border_width * 2);
 	} else if (arg->i == SANEWM_MAX_HALF_HALF_CENTER) {
-		current_window->x  += monitor_width - (current_window->width
-						     + conf.border_width * 2) + monitor_x;
-		current_window->y  += monitor_height - (current_window->height
-						      + conf.border_width * 2) + monitor_y;
+		current_window->x  += monitor_width - (current_window->width +
+						       conf.border_width * 2) + monitor_x;
+		current_window->y  += monitor_height - (current_window->height +
+							conf.border_width * 2) + monitor_y;
 		current_window->y  = current_window->y / 2;
 		current_window->x  = current_window->x / 2;
 	}
 
-	move_resize(current_window->id, current_window->x, current_window->y,
+	move_resize_window(current_window->id, current_window->x, current_window->y,
 		    current_window->width, current_window->height);
 
 	current_window->vertical_horizontal = true;
-	no_border(&temp, current_window, false);
+	no_window_border(&temp, current_window, false);
 	raise_current_window();
-	fit_on_screen(current_window);
+	fit_window_on_screen(current_window);
 	center_pointer(current_window->id, current_window);
-	set_borders(current_window, true);
+	set_window_borders(current_window, true);
 }
 
 
@@ -1147,7 +1148,7 @@ max_half_half(const Arg *arg)
 
 
 bool
-get_geometry(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t *width,
+get_window_geometry(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t *width,
 	     uint16_t *height, uint8_t *depth)
 {
 	xcb_get_geometry_reply_t *geom =
@@ -1167,7 +1168,7 @@ get_geometry(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t *width,
 }
 
 void
-teleport(const Arg *arg)
+teleport_window(const Arg *arg)
 {
 	int16_t point_x, point_y, monitor_x, monitor_y, temp = 0;
 	uint16_t monitor_width, monitor_height;
@@ -1183,14 +1184,14 @@ teleport(const Arg *arg)
 	uint16_t tmp_y = current_window->y;
 
 	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height,current_window);
-	no_border(&temp, current_window, true);
+	no_window_border(&temp, current_window, true);
 	current_window->x = monitor_x; current_window->y = monitor_y;
 
 	if (arg->i == SANEWM_TELEPORT_CENTER) { /* center */
-		current_window->x  += monitor_width - (current_window->width
-						     + conf.border_width * 2) + monitor_x;
-		current_window->y  += monitor_height - (current_window->height
-						      + conf.border_width * 2) + monitor_y;
+		current_window->x  += monitor_width - (current_window->width +
+						       conf.border_width * 2) + monitor_x;
+		current_window->y  += monitor_height - (current_window->height +
+							conf.border_width * 2) + monitor_y;
 		current_window->y  = current_window->y / 2;
 		current_window->x  = current_window->x / 2;
 	} else {
@@ -1198,13 +1199,13 @@ teleport(const Arg *arg)
 		if (arg->i > 3) {
 			/* bottom-left */
 			if (arg->i == SANEWM_TELEPORT_BOTTOM_LEFT)
-				current_window->y += monitor_height - (current_window->height
-								     + conf.border_width * 2);
+				current_window->y += monitor_height - (current_window->height +
+								       conf.border_width * 2);
 			/* center y */
 			else if (arg->i == SANEWM_TELEPORT_CENTER_Y) {
 				current_window->x  = tmp_x;
-				current_window->y += monitor_height - (current_window->height
-								     + conf.border_width * 2)+ monitor_y;
+				current_window->y += monitor_height - (current_window->height +
+								       conf.border_width * 2)+ monitor_y;
 				current_window->y  = current_window->y / 2;
 			}
 		} else {
@@ -1213,30 +1214,29 @@ teleport(const Arg *arg)
 				/* center x */
 				if (arg->i == SANEWM_TELEPORT_CENTER_X) {
 					current_window->y  = tmp_y;
-					current_window->x += monitor_width
-						- (current_window->width
-						   + conf.border_width * 2)
-						+ monitor_x;
+					current_window->x += monitor_width -
+						(current_window->width + conf.border_width * 2) +
+						monitor_x;
 					current_window->x  = current_window->x / 2;
 				} else
-					current_window->x += monitor_width
-						- (current_window->width
-						   + conf.border_width * 2);
+					current_window->x += monitor_width -
+						(current_window->width +
+						 conf.border_width * 2);
 			else {
 				/* bottom-right */
-				current_window->x += monitor_width
-					- (current_window->width
-					   + conf.border_width * 2);
-				current_window->y += monitor_height
-					- (current_window->height
-					   + conf.border_width * 2);
+				current_window->x += monitor_width -
+					(current_window->width +
+					 conf.border_width * 2);
+				current_window->y += monitor_height -
+					(current_window->height +
+					 conf.border_width * 2);
 			}
 		}
 	}
 
 	move_window(current_window->id, current_window->x, current_window->y);
 	move_pointer_back(point_x,point_y, current_window);
-	no_border(&temp, current_window, false);
+	no_window_border(&temp, current_window, false);
 	raise_current_window();
 	xcb_flush(conn);
 }
@@ -1325,7 +1325,7 @@ forget_window_id(xcb_window_t win)
 }
 
 void
-no_border(int16_t *temp, struct sane_window *window, bool set_unset)
+no_window_border(int16_t *temp, struct sane_window *window, bool set_unset)
 {
 	if (window->ignore_borders) {
 		if (set_unset) {
@@ -1337,13 +1337,13 @@ no_border(int16_t *temp, struct sane_window *window, bool set_unset)
 }
 
 void
-maximize_helper(struct sane_window *window, uint16_t monitor_x, uint16_t monitor_y,
+maximize_window_helper(struct sane_window *window, uint16_t monitor_x, uint16_t monitor_y,
 		uint16_t monitor_width, uint16_t monitor_height)
 {
 	uint32_t values[4];
 
 	values[0] = 0;
-	save_original_geometry(window);
+	save_original_window_geometry(window);
 	xcb_configure_window(conn, window->id, XCB_CONFIG_WINDOW_BORDER_WIDTH,
 			     values);
 
@@ -1352,14 +1352,14 @@ maximize_helper(struct sane_window *window, uint16_t monitor_x, uint16_t monitor
 	window->width = monitor_width;
 	window->height = monitor_height;
 
-	move_resize(window->id, window->x, window->y, window->width,
+	move_resize_window(window->id, window->x, window->y, window->width,
 		    window->height);
 	window->maxed = true;
 }
 
 /* Fit window on physical screen, moving and resizing as necessary. */
 void
-fit_on_screen(struct sane_window *window)
+fit_window_on_screen(struct sane_window *window)
 {
 	int16_t monitor_x, monitor_y,temp=0;
 	uint16_t monitor_width, monitor_height;
@@ -1371,7 +1371,7 @@ fit_on_screen(struct sane_window *window)
 
 	if (window->maxed) {
 		window->maxed = false;
-		set_borders(window, false);
+		set_window_borders(window, false);
 	} else {
 		/* not maxed but look as if it was maxed, then make it maxed */
 		if (window->width == monitor_width && window->height == monitor_height)
@@ -1388,7 +1388,7 @@ fit_on_screen(struct sane_window *window)
 			window->y = monitor_y;
 			window->width -= conf.border_width * 2;
 			window->height -= conf.border_width * 2;
-			maximize_helper(window, monitor_x, monitor_y, monitor_width,
+			maximize_window_helper(window, monitor_x, monitor_y, monitor_width,
 					monitor_height);
 			return;
 		} else {
@@ -1404,11 +1404,11 @@ fit_on_screen(struct sane_window *window)
 		will_move = true;
 		/* Is it outside the physical monitor? */
 		if (window->x > monitor_x + monitor_width)
-			window->x = monitor_x + monitor_width
-				- window->width - conf.border_width*2;
+			window->x = monitor_x + monitor_width -
+				window->width - conf.border_width*2;
 		if (window->y > monitor_y + monitor_height)
-			window->y = monitor_y + monitor_height - window->height
-				- conf.border_width * 2;
+			window->y = monitor_y + monitor_height - window->height -
+				conf.border_width * 2;
 		if (window->x < monitor_x)
 			window->x = monitor_x;
 		if (window->y < monitor_y)
@@ -1418,7 +1418,6 @@ fit_on_screen(struct sane_window *window)
 	/* Is it smaller than it wants to  be? */
 	if (0 != window->min_height && window->height < window->min_height) {
 		window->height = window->min_height;
-
 		will_resize = true;
 	}
 
@@ -1427,7 +1426,7 @@ fit_on_screen(struct sane_window *window)
 		will_resize = true;
 	}
 
-	no_border(&temp, window, true);
+	no_window_border(&temp, window, true);
 	/* If the window is larger than our screen, just place it in
 	 * the corner and resize. */
 	if (window->width + conf.border_width * 2 > monitor_width) {
@@ -1435,10 +1434,10 @@ fit_on_screen(struct sane_window *window)
 		window->width = monitor_width - conf.border_width * 2;
 		will_move = will_resize = true;
 	} else
-		if (window->x + window->width + conf.border_width * 2
-		    > monitor_x + monitor_width) {
-			window->x = monitor_x + monitor_width - (window->width
-								 + conf.border_width * 2);
+		if (window->x + window->width + conf.border_width * 2 >
+		    monitor_x + monitor_width) {
+			window->x = monitor_x + monitor_width -
+				(window->width + conf.border_width * 2);
 			will_move = true;
 		}
 	if (window->height + conf.border_width * 2 > monitor_height) {
@@ -1446,10 +1445,10 @@ fit_on_screen(struct sane_window *window)
 		window->height = monitor_height - conf.border_width * 2;
 		will_move = will_resize = true;
 	} else
-		if (window->y + window->height + conf.border_width * 2 > monitor_y
-		    + monitor_height) {
-			window->y = monitor_y + monitor_height - (window->height
-								  + conf.border_width * 2);
+		if (window->y + window->height + conf.border_width * 2 > monitor_y +
+		    monitor_height) {
+			window->y = monitor_y + monitor_height - (window->height +
+								  conf.border_width * 2);
 			will_move = true;
 		}
 
@@ -1457,13 +1456,13 @@ fit_on_screen(struct sane_window *window)
 		move_window(window->id, window->x, window->y);
 
 	if (will_resize)
-		resize(window->id, window->width, window->height);
+		resize_window(window->id, window->width, window->height);
 
-	no_border(&temp, window, false);
+	no_window_border(&temp, window, false);
 }
 
 void
-save_original_geometry(struct sane_window *window)
+save_original_window_geometry(struct sane_window *window)
 {
 	window->original_geometry.x      = window->x;
 	window->original_geometry.y      = window->y;
@@ -1479,8 +1478,9 @@ update_window_list(void)
 	struct sane_window *window;
 
 	/* can only be called after the first window has been spawn */
-	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,
-							     xcb_query_tree(conn, screen->root), 0);
+	xcb_query_tree_reply_t *reply =
+		xcb_query_tree_reply(conn,
+				     xcb_query_tree(conn, screen->root), 0);
 	xcb_delete_property(conn, screen->root, ewmh->_NET_CLIENT_LIST);
 	xcb_delete_property(conn, screen->root, ewmh->_NET_CLIENT_LIST_STACKING);
 
@@ -1547,14 +1547,14 @@ setup_screen(void)
 					window->monitor = find_monitor_by_coordinate(window->x,
 										     window->y);
 				/* Fit window on physical screen. */
-				fit_on_screen(window);
-				set_borders(window, false);
+				fit_window_on_screen(window);
+				set_window_borders(window, false);
 
 				/* Check if this window has a workspace set already
 				 * as a WM hint. */
 				ws = get_wm_desktop(children[i]);
 
-				if (get_unkill_state(children[i]))
+				if (check_window_state_unkill(children[i]))
 					unkillable_window(window);
 
 				if (ws == NET_WM_FIXED) {

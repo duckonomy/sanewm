@@ -74,7 +74,7 @@ change_workspace_helper(const uint32_t ws)
 	for (item = workspace_list[current_workspace]; item != NULL;) {
 		window = item->data;
 		item = item->next;
-		set_borders(window, false);
+		set_window_borders(window, false);
 		if (!window->fixed){
 			xcb_unmap_window(conn, window->id);
 		} else {

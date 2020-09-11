@@ -100,7 +100,7 @@ int find_hidden(void)
     children = xcb_query_tree_children(reply);
 
     /* List all hidden windows on this root. */
-    for (i = 0; i < len; i ++)
+    for (i = 0; i < len; ++i)
     {
 	attr = xcb_get_window_attributes_reply(
 	    conn, xcb_get_window_attributes(conn, children[i]), NULL);

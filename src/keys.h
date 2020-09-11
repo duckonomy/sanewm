@@ -5,7 +5,7 @@
 
 bool setup_keyboard(void);
 void grab_keys(void);
-xcb_keycode_t *xcb_get_keycodes(xcb_keysym_t);
-xcb_keysym_t xcb_get_keysym(xcb_keycode_t);
+xcb_keycode_t *keysym_to_keycode(xcb_keysym_t);
+xcb_keysym_t keycode_to_keysym(xcb_keycode_t);
 
 #endif
