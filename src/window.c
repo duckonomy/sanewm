@@ -28,10 +28,16 @@
 #include "events.h"
 #include "desktop.h"
 
+/* void */
+/* fix_current_window() */
+/* { */
+/*	fix_window(current_window); */
+/* } */
+
 void
-fix_current_window()
+fix_current_window_monitor()
 {
-	fix_window(current_window);
+	fix_window_monitor(current_window);
 }
 
 void
@@ -55,62 +61,62 @@ add_to_window_list(const xcb_drawable_t id)
 			    ewmh->_NET_CLIENT_LIST_STACKING, XCB_ATOM_WINDOW, 32, 1,&id);
 }
 
-void
-focus_next_window_helper(bool arg)
-{
-	struct sane_window *window = NULL;
-	struct list_item *head = workspace_list[current_workspace];
-	struct list_item *tail, *item = NULL;
-	// no windows on current workspace
-	if (NULL == head)
-		return;
-	// if no focus on current workspace, find first valid item on list.
-	if (NULL == current_window || current_window->ws != current_workspace) {
-		for (item = head; item != NULL; item = item->next) {
-			window = item->data;
-			if (!window->iconic)
-				break;
-		}
-	} else {
-		// find tail of list and make list circular.
-		for (tail = head = item = workspace_list[current_workspace];
-		     item != NULL;
-		     tail = item, item = item->next);
-		head->prev = tail;
-		tail->next = head;
-		if (arg == SANEWM_FOCUS_NEXT) {
-			// start from focus next and find first valid item on circular list.
-			head = item = current_window->workspace_item->next;
-			// FIXME
-			/* head = item = current_window->monitor_workspace_item->next; */
-			do {
-				window = item->data;
-				if (!window->iconic)
-					break;
-				item = item->next;
-			} while (item != head);
-		} else {
-			// start from focus previous and find first valid on circular list.
-			tail = item = current_window->workspace_item->prev;
-			// FIXME
-			/* head = item = current_window->monitor_workspace_item->prev; */
-			do {
-				window = item->data;
-				if (!window->iconic)
-					break;
-				item = item->prev;
-			} while (item != tail);
-		}
-		// restore list.
-		workspace_list[current_workspace]->prev->next = NULL;
-		workspace_list[current_workspace]->prev = NULL;
-	}
-	if (!item || !(window = item->data) || window->iconic)
-		return;
-	raise_window(window->id);
-	center_pointer(window->id, window);
-	focus_window(window);
-}
+/* void */
+/* focus_next_window_helper(bool arg) */
+/* { */
+/*	struct sane_window *window = NULL; */
+/*	struct list_item *head = workspace_list[current_workspace]; */
+/*	struct list_item *tail, *item = NULL; */
+/*	// no windows on current workspace */
+/*	if (NULL == head) */
+/*		return; */
+/*	// if no focus on current workspace, find first valid item on list. */
+/*	if (NULL == current_window || current_window->ws != current_workspace) { */
+/*		for (item = head; item != NULL; item = item->next) { */
+/*			window = item->data; */
+/*			if (!window->iconic) */
+/*				break; */
+/*		} */
+/*	} else { */
+/*		// find tail of list and make list circular. */
+/*		for (tail = head = item = workspace_list[current_workspace]; */
+/*		     item != NULL; */
+/*		     tail = item, item = item->next); */
+/*		head->prev = tail; */
+/*		tail->next = head; */
+/*		if (arg == SANEWM_FOCUS_NEXT) { */
+/*			// start from focus next and find first valid item on circular list. */
+/*			head = item = current_window->workspace_item->next; */
+/*			// FIXME */
+/*			/\* head = item = current_window->monitor_workspace_item->next; *\/ */
+/*			do { */
+/*				window = item->data; */
+/*				if (!window->iconic) */
+/*					break; */
+/*				item = item->next; */
+/*			} while (item != head); */
+/*		} else { */
+/*			// start from focus previous and find first valid on circular list. */
+/*			tail = item = current_window->workspace_item->prev; */
+/*			// FIXME */
+/*			/\* head = item = current_window->monitor_workspace_item->prev; *\/ */
+/*			do { */
+/*				window = item->data; */
+/*				if (!window->iconic) */
+/*					break; */
+/*				item = item->prev; */
+/*			} while (item != tail); */
+/*		} */
+/*		// restore list. */
+/*		workspace_list[current_workspace]->prev->next = NULL; */
+/*		workspace_list[current_workspace]->prev = NULL; */
+/*	} */
+/*	if (!item || !(window = item->data) || window->iconic) */
+/*		return; */
+/*	raise_window(window->id); */
+/*	center_pointer(window->id, window); */
+/*	focus_window(window); */
+/* } */
 
 void
 focus_next_window_helper_monitor(bool arg)
@@ -169,11 +175,11 @@ focus_next_window_helper_monitor(bool arg)
 }
 
 
-void
-focus_next_window(const Arg *arg)
-{
-	focus_next_window_helper(arg->i > 0);
-}
+/* void */
+/* focus_next_window(const Arg *arg) */
+/* { */
+/*	focus_next_window_helper(arg->i > 0); */
+/* } */
 
 void
 focus_next_window_monitor(const Arg *arg)
@@ -250,32 +256,32 @@ always_on_top_window()
 }
 
 /* Fix or unfix a window client from all workspaces. If setcolour is */
-void
-fix_window(struct sane_window *window)
-{
-	uint32_t ws, ww;
+/* void */
+/* fix_window(struct sane_window *window) */
+/* { */
+/*	uint32_t ws, ww; */
 
-	if (NULL == window)
-		return;
+/*	if (NULL == window) */
+/*		return; */
 
-	if (window->fixed) {
-		window->fixed = false;
-		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id,
-				    ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1,
-				    &current_workspace);
-	} else {
-		/* Raise the window, if going to another desktop don't
-		 * let the fixed window behind. */
-		raise_window(window->id);
-		window->fixed = true;
-		ww = NET_WM_FIXED;
-		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id,
-				    ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1,
-				    &ww);
-	}
+/*	if (window->fixed) { */
+/*		window->fixed = false; */
+/*		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id, */
+/*				    ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, */
+/*				    &current_workspace); */
+/*	} else { */
+/*		/\* Raise the window, if going to another desktop don't */
+/*		 * let the fixed window behind. *\/ */
+/*		raise_window(window->id); */
+/*		window->fixed = true; */
+/*		ww = NET_WM_FIXED; */
+/*		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id, */
+/*				    ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, */
+/*				    &ww); */
+/*	} */
 
-	set_window_borders(window, true);
-}
+/*	set_window_borders(window, true); */
+/* } */
 
 void
 fix_window_monitor(struct sane_window *window)
@@ -768,57 +774,57 @@ resize_step_aspect_window(const Arg *arg)
 	set_window_borders(current_window, true);
 }
 
-/* Try to snap to other windows and monitor border */
-void
-snap_window(struct sane_window *window)
-{
-	struct list_item *item;
-	struct sane_window *win;
-	int16_t monitor_x, monitor_y;
-	uint16_t monitor_width, monitor_height;
+/* /\* Try to snap to other windows and monitor border *\/ */
+/* void */
+/* snap_window(struct sane_window *window) */
+/* { */
+/*	struct list_item *item; */
+/*	struct sane_window *win; */
+/*	int16_t monitor_x, monitor_y; */
+/*	uint16_t monitor_width, monitor_height; */
 
-	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, current_window);
+/*	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height, current_window); */
 
-	for (item = workspace_list[current_workspace]; item != NULL; item = item->next) {
-		win = item->data;
+/*	for (item = workspace_list[current_workspace]; item != NULL; item = item->next) { */
+/*		win = item->data; */
 
-		if (window != win) {
-			if (abs((win->x +win->width) - window->x +
-				conf.border_width) < borders[2])
-				if (window->y + window->height > win->y &&
-				    window->y < win->y +
-				    win->height)
-					window->x = (win->x + win->width) +
-						(2 * conf.border_width);
+/*		if (window != win) { */
+/*			if (abs((win->x +win->width) - window->x + */
+/*				conf.border_width) < borders[2]) */
+/*				if (window->y + window->height > win->y && */
+/*				    window->y < win->y + */
+/*				    win->height) */
+/*					window->x = (win->x + win->width) + */
+/*						(2 * conf.border_width); */
 
-			if (abs((win->y + win->height) -
-				window->y + conf.border_width) < borders[2])
-				if (window->x + window->width >win->x &&
-				    window->x < win->x + win->width)
-					window->y = (win->y + win->height) +
-						(2 * conf.border_width);
+/*			if (abs((win->y + win->height) - */
+/*				window->y + conf.border_width) < borders[2]) */
+/*				if (window->x + window->width >win->x && */
+/*				    window->x < win->x + win->width) */
+/*					window->y = (win->y + win->height) + */
+/*						(2 * conf.border_width); */
 
-			if (abs((window->x + window->width) - win->x +
-				conf.border_width) < borders[2])
-				if (window->y + window->height > win->y &&
-				    window->y < win->y + win->height)
-					window->x = (win->x - window->width) -
-						(2 * conf.border_width);
+/*			if (abs((window->x + window->width) - win->x + */
+/*				conf.border_width) < borders[2]) */
+/*				if (window->y + window->height > win->y && */
+/*				    window->y < win->y + win->height) */
+/*					window->x = (win->x - window->width) - */
+/*						(2 * conf.border_width); */
 
-			if (abs((window->y + window->height) -
-				win->y +
-				conf.border_width) <
-			    borders[2])
-				if (window->x +
-				    window->width >win->x &&
-				    window->x < win->x +
-				    win->width)
-					window->y = (win->y -
-						     window->height) -
-						(2 * conf.border_width);
-		}
-	}
-}
+/*			if (abs((window->y + window->height) - */
+/*				win->y + */
+/*				conf.border_width) < */
+/*			    borders[2]) */
+/*				if (window->x + */
+/*				    window->width >win->x && */
+/*				    window->x < win->x + */
+/*				    win->width) */
+/*					window->y = (win->y - */
+/*						     window->height) - */
+/*						(2 * conf.border_width); */
+/*		} */
+/*	} */
+/* } */
 
 
 /* Try to snap to other windows and monitor border */
@@ -1313,79 +1319,79 @@ get_window_geometry(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t 
 	return true;
 }
 
-void
-teleport_window(const Arg *arg)
-{
-	int16_t point_x, point_y, monitor_x, monitor_y, temp = 0;
-	uint16_t monitor_width, monitor_height;
+/* void */
+/* teleport_window(const Arg *arg) */
+/* { */
+/*	int16_t point_x, point_y, monitor_x, monitor_y, temp = 0; */
+/*	uint16_t monitor_width, monitor_height; */
 
-	if (NULL == current_window ||
-	    NULL == workspace_list[current_workspace] ||
-	    current_window->maxed)
-		return;
+/*	if (NULL == current_window || */
+/*	    NULL == workspace_list[current_workspace] || */
+/*	    current_window->maxed) */
+/*		return; */
 
-	if (!get_pointer(&current_window->id, &point_x, &point_y))
-		return;
-	uint16_t tmp_x = current_window->x;
-	uint16_t tmp_y = current_window->y;
+/*	if (!get_pointer(&current_window->id, &point_x, &point_y)) */
+/*		return; */
+/*	uint16_t tmp_x = current_window->x; */
+/*	uint16_t tmp_y = current_window->y; */
 
-	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height,current_window);
-	no_window_border(&temp, current_window, true);
-	current_window->x = monitor_x; current_window->y = monitor_y;
+/*	get_monitor_size(1, &monitor_x, &monitor_y, &monitor_width, &monitor_height,current_window); */
+/*	no_window_border(&temp, current_window, true); */
+/*	current_window->x = monitor_x; current_window->y = monitor_y; */
 
-	if (arg->i == SANEWM_TELEPORT_CENTER) { /* center */
-		current_window->x  += monitor_width - (current_window->width +
-						       conf.border_width * 2) + monitor_x;
-		current_window->y  += monitor_height - (current_window->height +
-							conf.border_width * 2) + monitor_y;
-		current_window->y  = current_window->y / 2;
-		current_window->x  = current_window->x / 2;
-	} else {
-		/* top-left */
-		if (arg->i > 3) {
-			/* bottom-left */
-			if (arg->i == SANEWM_TELEPORT_BOTTOM_LEFT)
-				current_window->y += monitor_height - (current_window->height +
-								       conf.border_width * 2);
-			/* center y */
-			else if (arg->i == SANEWM_TELEPORT_CENTER_Y) {
-				current_window->x  = tmp_x;
-				current_window->y += monitor_height - (current_window->height +
-								       conf.border_width * 2)+ monitor_y;
-				current_window->y  = current_window->y / 2;
-			}
-		} else {
-			/* top-right */
-			if (arg->i < 2)
-				/* center x */
-				if (arg->i == SANEWM_TELEPORT_CENTER_X) {
-					current_window->y  = tmp_y;
-					current_window->x += monitor_width -
-						(current_window->width + conf.border_width * 2) +
-						monitor_x;
-					current_window->x  = current_window->x / 2;
-				} else
-					current_window->x += monitor_width -
-						(current_window->width +
-						 conf.border_width * 2);
-			else {
-				/* bottom-right */
-				current_window->x += monitor_width -
-					(current_window->width +
-					 conf.border_width * 2);
-				current_window->y += monitor_height -
-					(current_window->height +
-					 conf.border_width * 2);
-			}
-		}
-	}
+/*	if (arg->i == SANEWM_TELEPORT_CENTER) { /\* center *\/ */
+/*		current_window->x  += monitor_width - (current_window->width + */
+/*						       conf.border_width * 2) + monitor_x; */
+/*		current_window->y  += monitor_height - (current_window->height + */
+/*							conf.border_width * 2) + monitor_y; */
+/*		current_window->y  = current_window->y / 2; */
+/*		current_window->x  = current_window->x / 2; */
+/*	} else { */
+/*		/\* top-left *\/ */
+/*		if (arg->i > 3) { */
+/*			/\* bottom-left *\/ */
+/*			if (arg->i == SANEWM_TELEPORT_BOTTOM_LEFT) */
+/*				current_window->y += monitor_height - (current_window->height + */
+/*								       conf.border_width * 2); */
+/*			/\* center y *\/ */
+/*			else if (arg->i == SANEWM_TELEPORT_CENTER_Y) { */
+/*				current_window->x  = tmp_x; */
+/*				current_window->y += monitor_height - (current_window->height + */
+/*								       conf.border_width * 2)+ monitor_y; */
+/*				current_window->y  = current_window->y / 2; */
+/*			} */
+/*		} else { */
+/*			/\* top-right *\/ */
+/*			if (arg->i < 2) */
+/*				/\* center x *\/ */
+/*				if (arg->i == SANEWM_TELEPORT_CENTER_X) { */
+/*					current_window->y  = tmp_y; */
+/*					current_window->x += monitor_width - */
+/*						(current_window->width + conf.border_width * 2) + */
+/*						monitor_x; */
+/*					current_window->x  = current_window->x / 2; */
+/*				} else */
+/*					current_window->x += monitor_width - */
+/*						(current_window->width + */
+/*						 conf.border_width * 2); */
+/*			else { */
+/*				/\* bottom-right *\/ */
+/*				current_window->x += monitor_width - */
+/*					(current_window->width + */
+/*					 conf.border_width * 2); */
+/*				current_window->y += monitor_height - */
+/*					(current_window->height + */
+/*					 conf.border_width * 2); */
+/*			} */
+/*		} */
+/*	} */
 
-	move_window(current_window->id, current_window->x, current_window->y);
-	move_pointer_back(point_x,point_y, current_window);
-	no_window_border(&temp, current_window, false);
-	raise_current_window();
-	xcb_flush(conn);
-}
+/*	move_window(current_window->id, current_window->x, current_window->y); */
+/*	move_pointer_back(point_x,point_y, current_window); */
+/*	no_window_border(&temp, current_window, false); */
+/*	raise_current_window(); */
+/*	xcb_flush(conn); */
+/* } */
 
 void
 teleport_window_monitor(const Arg *arg)
@@ -1462,12 +1468,22 @@ teleport_window_monitor(const Arg *arg)
 }
 
 
+/* void */
+/* kill_window(const Arg *arg) */
+/* { */
+/*	xcb_kill_client(conn, current_window->id); */
+
+/*	forget_window_id(current_window->id); */
+
+/*	update_window_list(); */
+/* } */
+
 void
-kill_window(const Arg *arg)
+kill_window_monitor(const Arg *arg)
 {
 	xcb_kill_client(conn, current_window->id);
 
-	forget_window_id(current_window->id);
+	forget_window_id_monitor(current_window->id);
 
 	update_window_list();
 }
@@ -1520,21 +1536,21 @@ delete_window(const Arg *arg)
 
 
 /* Forget everything about window. */
-void
-forget_window(struct sane_window *window)
-{
-	uint32_t ws;
+/* void */
+/* forget_window(struct sane_window *window) */
+/* { */
+/*	uint32_t ws; */
 
-	if (NULL == window)
-		return;
-	if (window->id == top_win)
-		top_win = 0;
-	/* Delete window from the workspace list it belongs to. */
-	delete_from_workspace(window);
+/*	if (NULL == window) */
+/*		return; */
+/*	if (window->id == top_win) */
+/*		top_win = 0; */
+/*	/\* Delete window from the workspace list it belongs to. *\/ */
+/*	delete_from_workspace(window); */
 
-	/* Remove from global window list. */
-	free_item(&window_list, NULL, window->window_item);
-}
+/*	/\* Remove from global window list. *\/ */
+/*	free_item(&window_list, NULL, window->window_item); */
+/* } */
 
 /* Forget everything about window. */
 void
@@ -1553,9 +1569,27 @@ forget_window_monitor(struct sane_window *window)
 	free_item(&window_list, NULL, window->window_item);
 }
 
-/* Forget everything about a window with window->id win. */
+/* /\* Forget everything about a window with window->id win. *\/ */
+/* void */
+/* forget_window_id(xcb_window_t win) */
+/* { */
+/*	struct sane_window *window; */
+/*	struct list_item *item; */
+
+/*	for (item = window_list; item != NULL; item = item->next) { */
+/*		/\* Find this window in the global window list. *\/ */
+/*		window = item->data; */
+/*		if (win == window->id) { */
+/*			/\* Forget it and free allocated data, it might */
+/*			 * already be freed by handling an Unmap_Notify. *\/ */
+/*			forget_window(window); */
+/*			return; */
+/*		} */
+/*	} */
+/* } */
+
 void
-forget_window_id(xcb_window_t win)
+forget_window_id_monitor(xcb_window_t win)
 {
 	struct sane_window *window;
 	struct list_item *item;
@@ -1566,7 +1600,7 @@ forget_window_id(xcb_window_t win)
 		if (win == window->id) {
 			/* Forget it and free allocated data, it might
 			 * already be freed by handling an Unmap_Notify. */
-			forget_window(window);
+			forget_window_monitor(window);
 			return;
 		}
 	}
@@ -1749,103 +1783,103 @@ update_window_list(void)
 	free(reply);
 }
 
-/* Walk through all existing windows and set them up. returns true on success */
-bool
-setup_screen(void)
-{
-	xcb_get_window_attributes_reply_t *attr;
-	struct sane_window *window;
-	uint32_t ws;
-	uint32_t len;
-	xcb_window_t *children;
-	uint32_t i;
+/* /\* Walk through all existing windows and set them up. returns true on success *\/ */
+/* bool */
+/* setup_screen(void) */
+/* { */
+/*	xcb_get_window_attributes_reply_t *attr; */
+/*	struct sane_window *window; */
+/*	uint32_t ws; */
+/*	uint32_t len; */
+/*	xcb_window_t *children; */
+/*	uint32_t i; */
 
-	/* Get all children. */
-	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,
-							     xcb_query_tree(conn, screen->root), 0);
+/*	/\* Get all children. *\/ */
+/*	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn, */
+/*							     xcb_query_tree(conn, screen->root), 0); */
 
-	if (NULL == reply)
-		return false;
+/*	if (NULL == reply) */
+/*		return false; */
 
-	len = xcb_query_tree_children_length(reply);
-	children = xcb_query_tree_children(reply);
+/*	len = xcb_query_tree_children_length(reply); */
+/*	children = xcb_query_tree_children(reply); */
 
-	/* Set up all windows on this root. */
-	for (i = 0; i < len; ++i) {
-		attr = xcb_get_window_attributes_reply(conn,
-						       xcb_get_window_attributes(conn, children[i]),
-						       NULL);
+/*	/\* Set up all windows on this root. *\/ */
+/*	for (i = 0; i < len; ++i) { */
+/*		attr = xcb_get_window_attributes_reply(conn, */
+/*						       xcb_get_window_attributes(conn, children[i]), */
+/*						       NULL); */
 
-		if (!attr)
-			continue;
+/*		if (!attr) */
+/*			continue; */
 
-		/* Don't set up or even bother windows in override redirect mode.
-		 * This mode means they wouldn't have been reported to us with a
-		 * MapRequest if we had been running, so in the normal case we wouldn't
-		 * have seen them. Only handle visible windows. */
-		if (!attr->override_redirect &&
-		    attr->map_state ==
-		    XCB_MAP_STATE_VIEWABLE) {
-			window = setup_window(children[i]);
+/*		/\* Don't set up or even bother windows in override redirect mode. */
+/*		 * This mode means they wouldn't have been reported to us with a */
+/*		 * MapRequest if we had been running, so in the normal case we wouldn't */
+/*		 * have seen them. Only handle visible windows. *\/ */
+/*		if (!attr->override_redirect && */
+/*		    attr->map_state == */
+/*		    XCB_MAP_STATE_VIEWABLE) { */
+/*			window = setup_window(children[i]); */
 
-			if (NULL != window) {
-				/* Find the physical output this window will be on if
-				 * RANDR is active. */
-				if (-1 != randr_base)
-					window->monitor = find_monitor_by_coordinate(window->x,
-										     window->y);
-				/* Fit window on physical screen. */
-				fit_window_on_screen(window);
-				set_window_borders(window, false);
+/*			if (NULL != window) { */
+/*				/\* Find the physical output this window will be on if */
+/*				 * RANDR is active. *\/ */
+/*				if (-1 != randr_base) */
+/*					window->monitor = find_monitor_by_coordinate(window->x, */
+/*										     window->y); */
+/*				/\* Fit window on physical screen. *\/ */
+/*				fit_window_on_screen(window); */
+/*				set_window_borders(window, false); */
 
-				/* Check if this window has a workspace set already
-				 * as a WM hint. */
-				ws = get_wm_desktop(children[i]);
+/*				/\* Check if this window has a workspace set already */
+/*				 * as a WM hint. *\/ */
+/*				ws = get_wm_desktop(children[i]); */
 
-				if (check_window_state_unkill(children[i]))
-					unkillable_window(window);
+/*				if (check_window_state_unkill(children[i])) */
+/*					unkillable_window(window); */
 
-				if (ws == NET_WM_FIXED) {
-					/* Add to current workspace. */
-					add_to_workspace(window, current_workspace);
-					/* Add to all other workspaces. */
-					fix_window(window);
-				} else {
-					if (SANEWM_NOWS != ws && ws < WORKSPACES) {
-						add_to_workspace(window, ws);
-						if (ws != current_workspace)
-							/* If it's not our current works
-							 * pace, hide it. */
-							xcb_unmap_window(conn,
-									 window->id);
-					} else {
-						add_to_workspace(window, current_workspace);
-						add_to_window_list(children[i]);
-					}
-				}
-			}
-		}
+/*				if (ws == NET_WM_FIXED) { */
+/*					/\* Add to current workspace. *\/ */
+/*					add_to_workspace(window, current_workspace); */
+/*					/\* Add to all other workspaces. *\/ */
+/*					fix_window(window); */
+/*				} else { */
+/*					if (SANEWM_NOWS != ws && ws < WORKSPACES) { */
+/*						add_to_workspace(window, ws); */
+/*						if (ws != current_workspace) */
+/*							/\* If it's not our current works */
+/*							 * pace, hide it. *\/ */
+/*							xcb_unmap_window(conn, */
+/*									 window->id); */
+/*					} else { */
+/*						add_to_workspace(window, current_workspace); */
+/*						add_to_window_list(children[i]); */
+/*					} */
+/*				} */
+/*			} */
+/*		} */
 
-		if (NULL != attr)
-			free(attr);
+/*		if (NULL != attr) */
+/*			free(attr); */
 
-	}
-	change_workspace_helper(0);
+/*	} */
+/*	change_workspace_helper(0); */
 
-	xcb_randr_get_output_primary_reply_t *gpo =
-		xcb_randr_get_output_primary_reply(conn, xcb_randr_get_output_primary(conn, screen->root), NULL);
+/*	xcb_randr_get_output_primary_reply_t *gpo = */
+/*		xcb_randr_get_output_primary_reply(conn, xcb_randr_get_output_primary(conn, screen->root), NULL); */
 
-	primary_output_monitor = gpo->output;
-	current_monitor = find_monitor(primary_output_monitor);
+/*	primary_output_monitor = gpo->output; */
+/*	current_monitor = find_monitor(primary_output_monitor); */
 
-	if (NULL != reply)
-		free(reply);
+/*	if (NULL != reply) */
+/*		free(reply); */
 
-	if (NULL != gpo)
-		free(gpo);
+/*	if (NULL != gpo) */
+/*		free(gpo); */
 
-	return true;
-}
+/*	return true; */
+/* } */
 
 /* Walk through all existing windows and set them up. returns true on success */
 bool
@@ -1915,7 +1949,7 @@ setup_screen_monitor(void)
 					// FIXME Need this before setting focused monitor
 					add_to_workspace_monitor(window, current_monitor->workspace);
 					/* Add to all other workspaces. */
-					fix_window(window);
+					fix_window_monitor(window);
 				} else {
 					if (SANEWM_NOWS != ws && ws < WORKSPACES) {
 						// FIXME Need this before setting focused monitor

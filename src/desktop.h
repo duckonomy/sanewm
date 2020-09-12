@@ -26,23 +26,23 @@
 
 #include "types.h"
 
-void delete_from_workspace(struct sane_window *);
+/* void delete_from_workspace(struct sane_window *); */
 void delete_from_workspace_monitor(struct sane_window *);
-void change_workspace(const Arg *);
+/* void change_workspace(const Arg *); */
 void change_workspace_monitor(const Arg *);
-void next_workspace();
+/* void next_workspace(); */
 void next_workspace_monitor();
-void previous_workspace();
+/* void previous_workspace(); */
 void previous_workspace_monitor();
-void add_to_workspace(struct sane_window *, uint32_t);
+/* void add_to_workspace(struct sane_window *, uint32_t); */
 void add_to_workspace_monitor(struct sane_window *, uint32_t);
-void change_workspace_helper(const uint32_t);
+/* void change_workspace_helper(const uint32_t); */
 void change_workspace_helper_monitor(const uint32_t);
-void send_to_workspace(const Arg *);
+/* void send_to_workspace(const Arg *); */
 void send_to_workspace_monitor(const Arg *);
-void send_to_next_workspace(const Arg *);
+/* void send_to_next_workspace(const Arg *); */
 void send_to_next_workspace_monitor(const Arg *);
-void send_to_previous_workspace(const Arg *);
+/* void send_to_previous_workspace(const Arg *); */
 void send_to_previous_workspace_monitor(const Arg *);
 uint32_t get_wm_desktop(xcb_drawable_t);
 

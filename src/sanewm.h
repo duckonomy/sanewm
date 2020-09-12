@@ -41,13 +41,13 @@ extern xcb_connection_t *conn;
 extern xcb_ewmh_connection_t *ewmh;
 extern xcb_screen_t     *screen;
 extern int randr_base;
-extern uint8_t current_workspace;
+/* extern uint8_t current_workspace; */
 
 extern struct sane_window *current_window;
 extern xcb_drawable_t top_win;
 extern struct list_item *window_list;
 extern struct list_item *monitor_list;
-extern struct list_item *workspace_list[WORKSPACES];
+/* extern struct list_item *workspace_list[WORKSPACES]; */
 
 extern xcb_randr_output_t primary_output_monitor;
 extern struct monitor *current_monitor;
@@ -55,13 +55,16 @@ extern const char *atom_names[NUM_ATOMS][1];
 extern xcb_atom_t ATOM[NUM_ATOMS];
 extern struct conf conf;
 
-void run(void);
-bool setup(int);
+/* void run(void); */
+void run_monitor(void);
+/* bool setup(int); */
+bool setup_monitor(int);
 void install_sig_handlers(void);
 void start(const Arg *);
 void sanewm_restart();
 void sanewm_exit();
-void cleanup(void);
+/* void cleanup(void); */
+void cleanup_monitor(void);
 void sig_catch(const int);
 xcb_atom_t get_atom(const char *);
 

@@ -309,6 +309,7 @@ add_monitor(xcb_randr_output_t id, const int16_t x, const int16_t y,
 	monitor->y      = y;
 	monitor->width  = width;
 	monitor->height = height;
+	monitor->workspace = 0;
 
 	return monitor;
 }

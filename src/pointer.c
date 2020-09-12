@@ -104,22 +104,22 @@ mouse_resize(struct sane_window *window, const int16_t rel_x, const int16_t rel_
 	window->horizontal_maxed  = false;
 }
 
-/* Move window win as a result of pointer motion to coordinates rel_x,rel_y. */
-void
-mouse_move(const int16_t rel_x, const int16_t rel_y)
-{
-	if (current_window == NULL ||
-	    current_window->ws != current_workspace)
-		return;
+/* /\* Move window win as a result of pointer motion to coordinates rel_x,rel_y. *\/ */
+/* void */
+/* mouse_move(const int16_t rel_x, const int16_t rel_y) */
+/* { */
+/*	if (current_window == NULL || */
+/*	    current_window->ws != current_workspace) */
+/*		return; */
 
-	current_window->x = rel_x;
-	current_window->y = rel_y;
+/*	current_window->x = rel_x; */
+/*	current_window->y = rel_y; */
 
-	if (borders[2] > 0)
-		snap_window(current_window);
+/*	if (borders[2] > 0) */
+/*		snap_window(current_window); */
 
-	move_window_limit(current_window);
-}
+/*	move_window_limit(current_window); */
+/* } */
 
 /* Move window win as a result of pointer motion to coordinates rel_x,rel_y. */
 void
@@ -133,7 +133,7 @@ mouse_move_monitor(const int16_t rel_x, const int16_t rel_y)
 	current_window->y = rel_y;
 
 	if (borders[2] > 0)
-		snap_window(current_window);
+		snap_window_monitor(current_window);
 
 	move_window_limit(current_window);
 }
