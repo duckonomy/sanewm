@@ -82,14 +82,16 @@ cleanup(void)
 {
 	free(ev);
 	if (monitor_list)
-		delete_all_items(&monitor_list,NULL);
+		delete_all_items(&monitor_list, NULL);
 	struct list_item *curr, *workspace_item;
+
 	for (int i = 0; i < WORKSPACES; ++i){
 		if (!workspace_list[i])
 			continue;
 		curr = workspace_list[i];
 		while (curr) {
 			workspace_item = curr;
+
 			curr = curr->next;
 			free(workspace_item);
 		}
@@ -226,6 +228,8 @@ setup(int scrno)
 		return false;
 	}
 	xcb_ewmh_set_current_desktop(ewmh, scrno, current_workspace);
+	// FIXME
+	/* xcb_ewmh_set_current_desktop(ewmh, scrno, current_monitor->workspace); */
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
 
 	grab_keys();

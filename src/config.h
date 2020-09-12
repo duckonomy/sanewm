@@ -126,8 +126,8 @@ static void toggle_sloppy(const Arg *arg)
  *      DESKTOP_CHANGE(     XK_agrave,                        9)*
  */
 #define DESKTOP_CHANGE(K,N)						     \
-	{  MOD ,             K,			change_workspace, {.i = N}}, \
-	{  MOD | SHIFT,      K,			send_to_workspace, {.i = N}},
+	{  MOD ,             K,			change_workspace_monitor,  {.i = N}}, \
+	{  MOD | SHIFT,      K,			send_to_workspace_monitor, {.i = N}},
 
 static key keys[] = {
 	/* modifier           key            function           argument */

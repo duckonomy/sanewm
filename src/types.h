@@ -38,6 +38,7 @@ struct monitor {
 	uint16_t height;                // Width/Height in pixels.
 	struct list_item *item;              // Pointer to our place in output list.
 	struct list_item *window_workspace_list[WORKSPACES]; // pointer to list of workspaces
+	int workspace; // equivalent of global current_workspace but bound to monitor
 };
 
 typedef union {
@@ -95,8 +96,9 @@ struct sane_window {                     // Everything we know about a window.
 	struct monitor *monitor;        // The physical output this window is on.
 	struct list_item *window_item;       // Pointer to our place in global windows list.
 	struct list_item *workspace_item;    // Pointer to workspace window list.
-	struct list_item *monitor_item;    // Pointer to monitor window list.
+	struct list_item *monitor_workspace_item;    // Pointer to monitor window list.
 	int ws;                         // In which workspace this window belongs to.
+	int monitor_ws;                         // In which workspace this window belongs to.
 };
 
 struct winconf {                    // Window configuration data.

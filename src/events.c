@@ -152,6 +152,36 @@ unmap_notify(xcb_generic_event_t *ev)
 }
 
 void
+unmap_notify_monitor(xcb_generic_event_t *ev)
+{
+	xcb_unmap_notify_event_t *e = (xcb_unmap_notify_event_t *)ev;
+	struct sane_window *window = NULL;
+	/*
+	 * Find the window in our current workspace list, then forget about it.
+	 * Note that we might not know about the window we got the Unmap_Notify
+	 * event for.
+	 * It might be a window we just unmapped on *another* workspace when
+	 * changing workspaces, for instance, or it might be a window with
+	 * override redirect set.
+	 * This is not an error.
+	 * XXX We might need to look in the global window list, after all.
+	 * Consider if a window is unmapped on our last workspace while
+	 * changing workspaces.
+	 * If we do this, we need to keep track of our own windows and
+	 * ignore Unmap_Notify on them.
+	 */
+	window = find_window(&e->window);
+	if (NULL == window || window->monitor_ws != current_monitor->workspace)
+		return;
+	if (current_window != NULL && window->id == current_window->id)
+		current_window = NULL;
+	if (window->iconic == false)
+		forget_window(window);
+
+	update_window_list();
+}
+
+void
 config_notify(xcb_generic_event_t *ev)
 {
 	xcb_configure_notify_event_t *e = (xcb_configure_notify_event_t *)ev;
@@ -240,6 +270,67 @@ map_request(xcb_generic_event_t *ev)
 	focus_window(window);
 }
 
+/* Set position, geometry and attributes of a new window and show it on
+ * the screen.*/
+void
+map_request(xcb_generic_event_t *ev)
+{
+	xcb_map_request_event_t *e = (xcb_map_request_event_t *) ev;
+	struct sane_window *window;
+	long data[] = {
+		XCB_ICCCM_WM_STATE_NORMAL,
+		XCB_NONE
+	};
+
+	/* The window is trying to map itself on the current workspace,
+	 * but since it's unmapped it probably belongs on another workspace.*/
+	if (NULL != find_window(&e->window))
+		return;
+
+	window = setup_window(e->window);
+
+	if (NULL == window)
+		return;
+
+	/* Add this window to the current workspace. */
+	add_to_workspace_monitor(window, current_monitor->workspace);
+
+	/* If we don't have specific coord map it where the pointer is.*/
+	if (!window->set_by_user) {
+		if (!get_pointer(&screen->root, &window->x, &window->y))
+			window->x = window->y = 0;
+
+		window->x -= window->width / 2;
+		window->y -= window->height / 2;
+		move_window(window->id, window->x, window->y);
+	}
+
+	/* Find the physical output this window will be on if RANDR is active */
+	if (-1 != randr_base) {
+		/* window->monitor = find_monitor_by_coordinate(window->x, window->y); */
+		window->monitor = current_monitor;
+
+		if (NULL == window->monitor && NULL != monitor_list)
+			/* Window coordinates are outside all physical monitors.
+			 * Choose the first screen.*/
+			window->monitor = monitor_list->data;
+	}
+
+	fit_window_on_screen(window);
+
+	/* Show window on screen. */
+	xcb_map_window(conn, window->id);
+	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window->id,
+			    ewmh->_NET_WM_STATE, ewmh->_NET_WM_STATE, 32, 2, data);
+
+	center_pointer(e->window, window);
+	update_window_list();
+
+	if (!window->maxed)
+		set_window_borders(window, true);
+	// always focus new window
+	focus_window(window);
+}
 
 void
 circulate_request(xcb_generic_event_t *ev)
@@ -602,6 +693,79 @@ client_message(xcb_generic_event_t *ev)
 		 */
 		delete_from_workspace(window);
 		add_to_workspace(window, e->data.data32[0]);
+		xcb_unmap_window(conn, window->id);
+		xcb_flush(conn);
+	}
+}
+
+void
+client_message_monitor(xcb_generic_event_t *ev)
+{
+	xcb_client_message_event_t *e = (xcb_client_message_event_t *)ev;
+	struct sane_window *window;
+
+	if ((e->type == ATOM[wm_change_state] &&
+	     e->format == 32 &&
+	     e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) ||
+	    e->type == ewmh->_NET_ACTIVE_WINDOW) {
+		window = find_window(&e->window);
+
+		if (NULL == window)
+			return;
+
+		if (false == window->iconic) {
+			if (e->type == ewmh->_NET_ACTIVE_WINDOW) {
+				focus_window(window);
+				raise_window(window->id);
+			}
+
+			return;
+		}
+
+		window->iconic = false;
+		xcb_map_window(conn, window->id);
+		focus_window(window);
+	}
+	else if (e->type == ewmh->_NET_CURRENT_DESKTOP)
+		change_workspace_helper_monitor(e->data.data32[0]);
+	else if (e->type == ewmh->_NET_WM_STATE && e->format == 32) {
+		window = find_window(&e->window);
+		if (NULL == window)
+			return;
+		if (e->data.data32[1] == ewmh->_NET_WM_STATE_FULLSCREEN ||
+		    e->data.data32[2] == ewmh->_NET_WM_STATE_FULLSCREEN) {
+			switch (e->data.data32[0]) {
+			case XCB_EWMH_WM_STATE_REMOVE:
+				unmaximize_window(window);
+				break;
+			case XCB_EWMH_WM_STATE_ADD:
+				maximize_window(window, false);
+				break;
+			case XCB_EWMH_WM_STATE_TOGGLE:
+				if (window->maxed)
+					unmaximize_window(window);
+				else
+					maximize_window(window, false);
+				break;
+
+			default:
+				break;
+			}
+		}
+	} else if (e->type == ewmh->_NET_WM_DESKTOP && e->format == 32) {
+		window = find_window(&e->window);
+		if (NULL == window)
+			return;
+		/*
+		 * e->data.data32[1] Source indication
+		 * 0: backward compat
+		 * 1: normal
+		 * 2: pager/bars
+		 *
+		 * e->data.data32[0] new workspace
+		 */
+		delete_from_workspace_monitor(window);
+		add_to_workspace_monitor(window, e->data.data32[0]);
 		xcb_unmap_window(conn, window->id);
 		xcb_flush(conn);
 	}

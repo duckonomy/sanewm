@@ -121,6 +121,23 @@ mouse_move(const int16_t rel_x, const int16_t rel_y)
 	move_window_limit(current_window);
 }
 
+/* Move window win as a result of pointer motion to coordinates rel_x,rel_y. */
+void
+mouse_move_monitor(const int16_t rel_x, const int16_t rel_y)
+{
+	if (current_window == NULL ||
+	    current_window->monitor_ws != current_monitor->workspace)
+		return;
+
+	current_window->x = rel_x;
+	current_window->y = rel_y;
+
+	if (borders[2] > 0)
+		snap_window(current_window);
+
+	move_window_limit(current_window);
+}
+
 
 void
 move_pointer_back(const int16_t start_x, const int16_t start_y,
